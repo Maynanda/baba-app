@@ -1,0 +1,20 @@
+# Virtual Environments
+venv/
+env/
+.env
+
+# Generated Output
+output/pptx/*
+output/pdf/*
+!output/pptx/.gitkeep
+!output/pdf/.gitkeep
+
+# Python Artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# OS specific
+.DS_Store
+Thumbs.db
