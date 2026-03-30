@@ -2,16 +2,16 @@
   "post_date": "2026-04-01",
   "slides": [
     {
-      "type": "hook_slide",
-      "TITLE": "Automation is the key to consistency."
-    },
-    {
-      "type": "body_slide",
-      "BODY": "I use Python to generate all of my LinkedIn carousels while I sleep."
-    },
-    {
-      "type": "cta_slide",
-      "ACTION": "Follow me to learn how to do the same."
+      "HOOK_TITLE": "3 mistakes I made as a junior data scientist.",
+      "HOOK_SUB": "And how I finally learned to approach a messy dataset \u2192",
+      "BODY_1_TITLE": "1. Dropping NaNs blindly.",
+      "BODY_1_TEXT": "I used to just .dropna() everywhere. I ignored the fact that missing data often has a pattern. Now, I use simple imputation or investigate the root cause first.",
+      "BODY_2_TITLE": "2. Jumping straight into modeling.",
+      "BODY_2_TEXT": "XGBoost won't save a terrible feature space. Most of the real magic happens in exploratory data analysis and feature engineering. Spend 80% of your time there.",
+      "BODY_3_TITLE": "3. Ignoring business context.",
+      "BODY_3_TEXT": "I once optimized a model for 99% accuracy but it solved the wrong problem. Accuracy doesn't matter if you aren't improving the actual business KPI.",
+      "CTA_TITLE": "Found this helpful?",
+      "CTA_TEXT": "I share real-world AI and Data Science lessons every week. Hit follow so you don't miss the next one."
     }
   ]
 }

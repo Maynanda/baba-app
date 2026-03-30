@@ -4,10 +4,8 @@ env/
 .env
 
 # Generated Output
-output/pptx/*
-output/pdf/*
-!output/pptx/.gitkeep
-!output/pdf/.gitkeep
+output/
+data/
 
 # Python Artifacts
 __pycache__/
