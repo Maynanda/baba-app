@@ -1,0 +1,17 @@
+{
+  "post_date": "2026-04-01",
+  "slides": [
+    {
+      "type": "hook_slide",
+      "TITLE": "Automation is the key to consistency."
+    },
+    {
+      "type": "body_slide",
+      "BODY": "I use Python to generate all of my LinkedIn carousels while I sleep."
+    },
+    {
+      "type": "cta_slide",
+      "ACTION": "Follow me to learn how to do the same."
+    }
+  ]
+}
