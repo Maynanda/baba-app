@@ -1,0 +1,22 @@
+{
+  "templates": [
+    {
+      "id": "carousel_dark_1x1",
+      "name": "Dark Carousel",
+      "platforms": ["linkedin", "instagram_feed"],
+      "aspect_ratio": "1:1",
+      "niche": ["ai-engineering", "data-science"],
+      "status": "ready",
+      "path": "carousel_dark_1x1/main_carousel.pptx"
+    },
+    {
+      "id": "story_dark_9x16",
+      "name": "Dark Story / TikTok",
+      "platforms": ["instagram_story", "tiktok"],
+      "aspect_ratio": "9:16",
+      "niche": ["ai-engineering", "data-science"],
+      "status": "planned",
+      "path": "story_dark_9x16/main_story.pptx"
+    }
+  ]
+}

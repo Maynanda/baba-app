@@ -1,0 +1,26 @@
+{
+  "id": "post_llm_explained",
+  "status": "draft",
+  "platform": [
+    "linkedin"
+  ],
+  "niche": "ai-engineering",
+  "template": "carousel_dark_1x1",
+  "post_date": "2026-04-03",
+  "scheduled_time": "",
+  "source_url": "",
+  "slides": [
+    {
+      "HOOK_TITLE": "LLMs Explained Simply.",
+      "HOOK_SUB": "How do AI models like ChatGPT actually work? →",
+      "BODY_1_TITLE": "1. Predicting the next word.",
+      "BODY_1_TEXT": "At its core, a Large Language Model (LLM) is just playing a massive game of autocomplete. It looks at the text you gave it and predicts what the next most likely word is.",
+      "BODY_2_TITLE": "2. Trained on the entire internet.",
+      "BODY_2_TEXT": "LLMs learn the patterns of human text by reading billions of documents, books, and articles. This helps them understand context, grammar, and even coding languages.",
+      "BODY_3_TITLE": "3. They don't actually 'think'.",
+      "BODY_3_TEXT": "Despite seeming intelligent, LLMs don't have thoughts or consciousness. They use complex math and probabilities to string together words that look right based on their training.",
+      "CTA_TITLE": "Found this helpful?",
+      "CTA_TEXT": "I share real-world AI and Data Science lessons every week. Hit follow so you don't miss the next one."
+    }
+  ]
+}

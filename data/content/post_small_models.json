@@ -1,0 +1,26 @@
+{
+  "id": "post_small_models",
+  "status": "draft",
+  "platform": [
+    "linkedin"
+  ],
+  "niche": "ai-engineering",
+  "template": "carousel_dark_1x1",
+  "post_date": "2026-04-04",
+  "scheduled_time": "",
+  "source_url": "",
+  "slides": [
+    {
+      "HOOK_TITLE": "Why Smarter Isn't Always Better.",
+      "HOOK_SUB": "Small models are taking over the AI world →",
+      "BODY_1_TITLE": "1. What are SLMs?",
+      "BODY_1_TEXT": "Small Language Models (SLMs) like Phi or Llama-3-8B are designed to be efficient. Unlike their giant siblings, they can run on your laptop or even a phone with surprising accuracy.",
+      "BODY_2_TITLE": "2. Speed and Cost.",
+      "BODY_2_TEXT": "Giant models are expensive and slow. SLMs offer millisecond response times and cost a fraction of the price to run. Perfect for specialized tasks and mobile apps.",
+      "BODY_3_TITLE": "3. Security & Privacy.",
+      "BODY_3_TEXT": "Because you can run them locally, your data never has to leave your device. This is a game-changer for industries like healthcare and finance where privacy is #1.",
+      "CTA_TITLE": "Found this helpful?",
+      "CTA_TEXT": "I share real-world AI and Data Science lessons every week. Hit follow so you don't miss the next one."
+    }
+  ]
+}

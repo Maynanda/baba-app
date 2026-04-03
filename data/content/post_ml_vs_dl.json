@@ -1,0 +1,26 @@
+{
+  "id": "post_ml_vs_dl",
+  "status": "draft",
+  "platform": [
+    "linkedin"
+  ],
+  "niche": "ai-engineering",
+  "template": "carousel_dark_1x1",
+  "post_date": "2026-04-02",
+  "scheduled_time": "",
+  "source_url": "",
+  "slides": [
+    {
+      "HOOK_TITLE": "Machine Learning vs. Deep Learning.",
+      "HOOK_SUB": "Why they aren't the same thing →",
+      "BODY_1_TITLE": "1. What is Machine Learning?",
+      "BODY_1_TEXT": "Think of ML as a student learning from a textbook. You give it features (like size and price of a house) and it learns the rules to predict an outcome.",
+      "BODY_2_TITLE": "2. What is Deep Learning?",
+      "BODY_2_TEXT": "Deep Learning is a subset of ML. It uses artificial neural networks inspired by the human brain to learn directly from raw data like images or text without manual feature engineering.",
+      "BODY_3_TITLE": "3. Which one should you use?",
+      "BODY_3_TEXT": "Use ML for structured data (like Excel spreadsheets) when you have limited data and need explainability. Use Deep Learning for complex, unstructured data (like photos and audio) when you have lots of data.",
+      "CTA_TITLE": "Found this helpful?",
+      "CTA_TEXT": "I share real-world AI and Data Science lessons every week. Hit follow so you don't miss the next one."
+    }
+  ]
+}

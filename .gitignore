@@ -1,17 +1,29 @@
 # Virtual Environments
 venv/
 env/
-.env
 
-# Generated Output
+# Secrets — NEVER commit
+.env
+config/credentials/
+
+# Generated output (large binary files)
 output/
-data/
+data/raw/
+data/archive/
+
+# Keep data structure & docs tracked
+!data/content/.gitkeep
+!data/research/.gitkeep
 
 # Python Artifacts
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
+*.egg-info/
+dist/
+build/
+.pytest_cache/
 
 # OS specific
 .DS_Store

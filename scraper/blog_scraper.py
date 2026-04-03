@@ -1,0 +1,176 @@
+"""
+scraper/blog_scraper.py
+Scrapes a blog/article URL and extracts structured content.
+Saves raw item to data/raw/<id>.json.
+
+Usage:
+    python scraper/blog_scraper.py --url https://example.com/article
+    python -m scraper.blog_scraper --url https://example.com/article
+"""
+
+import os
+import sys
+import json
+import uuid
+import argparse
+from datetime import datetime, timezone
+from urllib.parse import urlparse
+
+import requests
+from bs4 import BeautifulSoup
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from config.settings import DATA_RAW_DIR, DEFAULT_NICHE
+from scraper.dedup import is_duplicate, mark_seen
+from scraper.image_scraper import download_images
+
+HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/120.0.0.0 Safari/537.36"
+    )
+}
+TIMEOUT = 15
+
+
+def _extract_images(soup: BeautifulSoup, base_url: str) -> list[str]:
+    """Extract all image src URLs from the article body."""
+    imgs = []
+    for tag in soup.select("article img, .post-content img, .entry-content img, main img"):
+        src = tag.get("src") or tag.get("data-src") or ""
+        if src.startswith("http"):
+            imgs.append(src)
+        elif src.startswith("/"):
+            parsed = urlparse(base_url)
+            imgs.append(f"{parsed.scheme}://{parsed.netloc}{src}")
+    # Remove duplicates and limit to 10 images
+    seen_imgs = []
+    for img in imgs:
+        if img not in seen_imgs:
+            seen_imgs.append(img)
+    return seen_imgs[:10]
+
+
+def _extract_body(soup: BeautifulSoup) -> str:
+    """Extract main article body text."""
+    # Try common article containers in order of preference
+    for selector in ["article", "main", ".post-content", ".entry-content", ".article-body"]:
+        container = soup.select_one(selector)
+        if container:
+            return container.get_text(separator="\n", strip=True)
+    # Fallback: all paragraphs
+    paras = soup.find_all("p")
+    return "\n".join(p.get_text(strip=True) for p in paras if len(p.get_text(strip=True)) > 50)
+
+
+def _extract_keywords(soup: BeautifulSoup, title: str) -> list[str]:
+    """Extract keywords from meta tags and title."""
+    kws = []
+    meta_kw = soup.find("meta", attrs={"name": "keywords"})
+    if meta_kw and meta_kw.get("content"):
+        kws = [k.strip() for k in meta_kw["content"].split(",")][:8]
+    if not kws:
+        # Fallback: split title into words > 4 chars
+        kws = [w for w in title.split() if len(w) > 4][:6]
+    return kws
+
+
+def scrape_article(url: str, niche: str = DEFAULT_NICHE, download_imgs: bool = True) -> dict | None:
+    """
+    Scrape a single article URL and return a structured raw item dict.
+    Returns None if the URL is a duplicate or fetch fails.
+    """
+    if is_duplicate(url):
+        print(f"[blog_scraper] Skipping duplicate: {url}")
+        return None
+
+    print(f"[blog_scraper] Scraping: {url}")
+    try:
+        resp = requests.get(url, headers=HEADERS, timeout=TIMEOUT)
+        resp.raise_for_status()
+    except Exception as e:
+        print(f"[blog_scraper] Fetch failed: {e}")
+        return None
+
+    soup = BeautifulSoup(resp.text, "html.parser")
+
+    # Title
+    title_tag = soup.find("h1") or soup.find("title")
+    title = title_tag.get_text(strip=True) if title_tag else "Untitled"
+
+    # Author
+    author = ""
+    for sel in ['[rel="author"]', ".author", ".byline", 'meta[name="author"]']:
+        tag = soup.select_one(sel)
+        if tag:
+            author = tag.get("content", "") or tag.get_text(strip=True)
+            break
+
+    # Published date
+    pub_date = ""
+    for sel in ["time", 'meta[property="article:published_time"]', 'meta[name="date"]']:
+        tag = soup.select_one(sel)
+        if tag:
+            pub_date = tag.get("datetime", "") or tag.get("content", "") or tag.get_text(strip=True)
+            break
+
+    # Body & images
+    body = _extract_body(soup)
+    image_urls = _extract_images(soup, url)
+    keywords = _extract_keywords(soup, title)
+
+    # Build raw item ID
+    raw_id = f"raw_{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}_{uuid.uuid4().hex[:6]}"
+
+    # Download images locally
+    local_images = []
+    if download_imgs and image_urls:
+        local_images = download_images(image_urls, raw_id)
+
+    item = {
+        "id": raw_id,
+        "scraped_at": datetime.now(timezone.utc).isoformat(),
+        "source": "blog",
+        "source_url": url,
+        "niche": niche,
+        "title": title,
+        "author": author,
+        "published_date": pub_date,
+        "body": body[:5000],  # cap at 5k chars for storage
+        "image_urls": image_urls,
+        "local_images": local_images,
+        "keywords": keywords,
+        "status": "raw",
+        "content_plan_id": None,
+    }
+
+    # Save to data/raw/
+    out_path = DATA_RAW_DIR / f"{raw_id}.json"
+    with open(out_path, "w") as f:
+        json.dump(item, f, indent=2, ensure_ascii=False)
+
+    mark_seen(url)
+    print(f"[blog_scraper] Saved → {out_path}")
+    return item
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Baba-App Blog Scraper")
+    parser.add_argument("--url", required=True, help="Article URL to scrape")
+    parser.add_argument("--niche", default=DEFAULT_NICHE, help="Content niche tag")
+    parser.add_argument("--no-images", action="store_true", help="Skip image downloads")
+    args = parser.parse_args()
+
+    result = scrape_article(args.url, niche=args.niche, download_imgs=not args.no_images)
+    if result:
+        print(f"\n✅ Scraped: {result['title']}")
+        print(f"   ID      : {result['id']}")
+        print(f"   Keywords: {', '.join(result['keywords'])}")
+        print(f"   Images  : {len(result['local_images'])} downloaded")
+    else:
+        print("\n❌ Scrape failed or duplicate.")
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,37 @@
+{
+  "id": "story_dark_9x16",
+  "name": "Dark Story / TikTok",
+  "description": "Dark theme vertical format for Instagram Story and TikTok. 9:16 aspect ratio.",
+  "niche": ["ai-engineering", "data-science"],
+  "platforms": ["instagram_story", "tiktok"],
+  "aspect_ratio": "9:16",
+  "slide_width_inches": 5.625,
+  "slide_height_inches": 10,
+  "colors": {
+    "background": "#14191E",
+    "accent_primary": "#FF7F50",
+    "accent_secondary": "#008080",
+    "text_primary": "#F0F0F0",
+    "text_secondary": "#AAAAAA"
+  },
+  "placeholders": [
+    "HOOK_TITLE",
+    "HOOK_SUB",
+    "BODY_1_TITLE",
+    "BODY_1_TEXT",
+    "BODY_2_TITLE",
+    "BODY_2_TEXT",
+    "BODY_3_TITLE",
+    "BODY_3_TEXT",
+    "CTA_TITLE",
+    "CTA_TEXT"
+  ],
+  "slides": [
+    {"index": 1, "type": "hook"},
+    {"index": 2, "type": "body_1"},
+    {"index": 3, "type": "body_2"},
+    {"index": 4, "type": "body_3"},
+    {"index": 5, "type": "cta"}
+  ],
+  "status": "planned"
+}

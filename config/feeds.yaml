@@ -1,0 +1,40 @@
+# RSS feeds for Baba-App scraper
+# Add or remove feeds here — no code changes needed
+# niche: ai-engineering | data-science | productivity | career
+
+feeds:
+  - url: https://towardsdatascience.com/feed
+    name: Towards Data Science
+    niche: data-science
+
+  - url: https://machinelearningmastery.com/feed/
+    name: Machine Learning Mastery
+    niche: ai-engineering
+
+  - url: https://www.deeplearning.ai/the-batch/feed/
+    name: DeepLearning.AI The Batch
+    niche: ai-engineering
+
+  - url: https://huggingface.co/blog/feed.xml
+    name: Hugging Face Blog
+    niche: ai-engineering
+
+  - url: https://openai.com/blog/rss.xml
+    name: OpenAI Blog
+    niche: ai-engineering
+
+  - url: https://blog.langchain.dev/rss/
+    name: LangChain Blog
+    niche: ai-engineering
+
+  - url: https://newsletter.theaiedge.io/feed
+    name: The AI Edge
+    niche: ai-engineering
+
+  - url: https://www.kaggle.com/discussions/rss
+    name: Kaggle Discussions
+    niche: data-science
+
+  - url: https://ai.googleblog.com/feeds/posts/default
+    name: Google AI Blog
+    niche: ai-engineering

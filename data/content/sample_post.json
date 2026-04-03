@@ -1,9 +1,18 @@
 {
+  "id": "sample_post",
+  "status": "draft",
+  "platform": [
+    "linkedin"
+  ],
+  "niche": "ai-engineering",
+  "template": "carousel_dark_1x1",
   "post_date": "2026-04-01",
+  "scheduled_time": "",
+  "source_url": "",
   "slides": [
     {
       "HOOK_TITLE": "3 mistakes I made as a junior data scientist.",
-      "HOOK_SUB": "And how I finally learned to approach a messy dataset \u2192",
+      "HOOK_SUB": "And how I finally learned to approach a messy dataset →",
       "BODY_1_TITLE": "1. Dropping NaNs blindly.",
       "BODY_1_TEXT": "I used to just .dropna() everywhere. I ignored the fact that missing data often has a pattern. Now, I use simple imputation or investigate the root cause first.",
       "BODY_2_TITLE": "2. Jumping straight into modeling.",
