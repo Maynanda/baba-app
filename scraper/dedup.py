@@ -4,39 +4,27 @@ Duplicate URL tracker — prevents re-scraping already processed items.
 Stores a set of seen URLs in data/raw/_seen.json.
 """
 
-import json
 import sys
-import os
+from pathlib import Path
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from config.settings import SCRAPER_SEEN_FILE
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from src.database import is_url_seen, mark_url_seen
 
+def load_seen() -> set:
+    """Legacy function - not needed with sqlite"""
+    pass
 
-def _load_seen() -> set:
-    """Load the set of already-seen URLs from disk."""
-    if SCRAPER_SEEN_FILE.exists():
-        with open(SCRAPER_SEEN_FILE, "r") as f:
-            return set(json.load(f))
-    return set()
-
-
-def _save_seen(seen: set) -> None:
-    """Persist the seen-URL set to disk."""
-    with open(SCRAPER_SEEN_FILE, "w") as f:
-        json.dump(list(seen), f, indent=2)
-
+def save_seen(seen: set):
+    """Legacy function - not needed with sqlite"""
+    pass
 
 def is_duplicate(url: str) -> bool:
-    """Return True if this URL has already been scraped."""
-    seen = _load_seen()
-    return url in seen
+    """Check if URL exists in sqlite seen_urls table."""
+    return is_url_seen(url)
 
-
-def mark_seen(url: str) -> None:
-    """Record a URL as scraped so it won't be processed again."""
-    seen = _load_seen()
-    seen.add(url)
-    _save_seen(seen)
+def mark_seen(url: str):
+    """Mark URL as seen in sqlite seen_urls table."""
+    mark_url_seen(url)
 
 
 def clear_seen() -> None:

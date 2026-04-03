@@ -24,6 +24,7 @@ import yaml
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config.settings import DATA_RAW_DIR, DEFAULT_NICHE
 from scraper.dedup import is_duplicate, mark_seen
+from src.database import save_raw
 
 FEEDS_CONFIG = Path(__file__).resolve().parent.parent / "config" / "feeds.yaml"
 
@@ -122,9 +123,7 @@ def scrape_feed(feed_url: str, feed_name: str = "Unknown", niche: str = DEFAULT_
             "content_plan_id": None,
         }
 
-        out_path = DATA_RAW_DIR / f"{raw_id}.json"
-        with open(out_path, "w") as f:
-            json.dump(item, f, indent=2, ensure_ascii=False)
+        save_raw(item)
 
         mark_seen(url)
         print(f"  [rss_scraper] Saved: {title[:60]}")

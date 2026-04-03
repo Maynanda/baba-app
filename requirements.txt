@@ -24,6 +24,10 @@ python-dotenv==1.1.0
 # ── Scheduling (Phase 4) ──────────────────────────────────────
 APScheduler==3.11.0
 
+# Frontend
+streamlit>=1.30.0
+pandas>=2.0.0
+
 # ── LLM / AI Agent (Phase 5 — install when ready) ────────────
 # openai==1.x.x
 # anthropic==0.x.x

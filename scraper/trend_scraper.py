@@ -55,11 +55,9 @@ def _is_relevant(text: str) -> bool:
 
 
 def _save_raw(item: dict) -> str:
-    """Save item to data/raw/ and return the file path."""
-    out_path = DATA_RAW_DIR / f"{item['id']}.json"
-    with open(out_path, "w") as f:
-        json.dump(item, f, indent=2, ensure_ascii=False)
-    return str(out_path)
+    from src.database import save_raw
+    save_raw(item)
+    return str(item['id'])
 
 
 # ─────────────────────────────────────────────────────────────

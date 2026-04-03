@@ -109,6 +109,36 @@
 
 ---
 
+## Phase 3.5 — SQLite & Streamlit Frontend ✅ COMPLETE
+> Goal: Replace JSON file pipeline with SQLite DB and provide a visual dashboard.
+
+### `src/database.py`
+- [x] Implement `init_db()`
+- [x] Implement `save_raw()` & `get_all_raw()`
+- [x] Implement `save_post()`, `get_post()`, `get_all_posts()`
+
+### Scraper refactor
+- [x] `scraper/trend_scraper.py` → saves to sqlite
+- [x] `scraper/blog_scraper.py` → saves to sqlite
+- [x] `scraper/rss_scraper.py` → saves to sqlite
+- [x] `scraper/dedup.py` → query sqlite instead of JSON files
+
+### CLI refactor
+- [x] `main.py` `content list` → queries sqlite
+- [x] `main.py` `content create` → inserts to sqlite
+- [x] `main.py` `generate` → fetches from sqlite
+
+### Generator refactor
+- [x] `src/generator/base.py` and `main.py` dispatch decoupled from file loading
+
+### Streamlit `app.py`
+- [x] Streamlit dependencies (`pandas`, `streamlit`)
+- [x] **Tab 1: Scraper Console** — visual trigger for scrapers
+- [x] **Tab 2: Data Management** — `st.dataframe` for raw & content pipelines
+- [x] **Tab 3: Visual Generator** — post selection, multi-platform rendering, image preview
+
+---
+
 ## Phase 4 — Publisher & Scheduler
 > Goal: Post approved content to platforms at scheduled times. Manual approval required.
 

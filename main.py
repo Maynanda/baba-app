@@ -78,56 +78,48 @@ def cmd_scrape_url(args):
 
 def cmd_content_list(args):
     sys.path.insert(0, str(BASE_DIR))
-    from config.settings import DATA_DIR
+    from src.database import get_all_posts, get_all_raw
 
-    data_folder = DATA_DIR / args.folder
-    if not data_folder.exists():
-        print(f"Folder not found: data/{args.folder}/")
-        return
+    if args.folder == "raw":
+        items = get_all_raw()
+    else:
+        items = get_all_posts()
 
-    files = sorted(data_folder.glob("*.json"))
-    if not files:
-        print(f"No items found in data/{args.folder}/")
+    if not items:
+        print(f"No items found in {args.folder} DB.")
         return
 
     print(f"\n{'─'*65}")
-    print(f"  data/{args.folder}/ — {len(files)} items")
+    print(f"  DB: {args.folder} — {len(items)} items")
     print(f"{'─'*65}")
+    
     count = 0
-    for f in files:
-        if f.name.startswith("_"):
+    for item in items:
+        item_status = item.get("status", "raw") if args.folder != "raw" else "raw"
+        if args.status and item_status != args.status:
             continue
-        try:
-            with open(f) as fp:
-                item = json.load(fp)
-            item_status = item.get("status", "?")
-            if args.status and item_status != args.status:
-                continue
-            title = item.get("title", f.stem)[:48]
-            platforms = ", ".join(item.get("platform", [])) or "—"
-            niche = item.get("niche", "—")
-            print(f"  [{item_status:10}]  {title:<50} | {platforms}")
-            count += 1
-        except Exception:
-            print(f"  [error     ]  {f.name}")
-            count += 1
+        title = item.get("title", item.get("id", ""))[:48]
+        platforms = item.get("platforms", item.get("platform", "—"))
+        if isinstance(platforms, list):
+            platforms = ", ".join(platforms)
+            
+        print(f"  [{item_status:10}]  {title:<50} | {platforms}")
+        count += 1
+        
     print(f"{'─'*65}")
     print(f"  {count} item(s) shown\n")
 
 
 def cmd_content_create(args):
     sys.path.insert(0, str(BASE_DIR))
-    from config.settings import DATA_CONTENT_DIR
+    from src.database import save_post, get_post
 
-    filename = f"post_{args.name}.json"
-    filepath = DATA_CONTENT_DIR / filename
-
-    if filepath.exists():
-        print(f"❌ Content '{filename}' already exists.")
+    post_id = f"post_{args.name}_{datetime.now().strftime('%Y%m%d')}"
+    if get_post(post_id):
+        print(f"❌ Content '{post_id}' already exists in DB.")
         sys.exit(1)
 
     platforms = [p.strip() for p in args.platform.split(",") if p.strip()]
-    post_id = f"post_{args.name}_{datetime.now().strftime('%Y%m%d')}"
     content = {
         "id": post_id,
         "status": "draft",
@@ -153,13 +145,12 @@ def cmd_content_create(args):
         ]
     }
 
-    with open(filepath, "w") as f:
-        json.dump(content, f, indent=2, ensure_ascii=False)
+    save_post(content)
 
-    print(f"\n✅ Created: {filepath}")
+    print(f"\n✅ Created in DB: {post_id}")
     print(f"   Platforms : {', '.join(platforms)}")
     print(f"   Template  : {args.template}")
-    print(f"   Edit the file, set status → 'approved', then run:")
+    print(f"   Set status → 'approved', then run:")
     print(f"   python main.py generate --post {post_id} --all-platforms\n")
 
 
@@ -169,19 +160,15 @@ def cmd_content_create(args):
 
 def cmd_generate(args):
     sys.path.insert(0, str(BASE_DIR))
-    from config.settings import DATA_CONTENT_DIR
+    from src.database import get_post
 
-    # Locate post file
-    post_file = DATA_CONTENT_DIR / f"{args.post}.json"
-    if not post_file.exists():
-        candidates = list(DATA_CONTENT_DIR.glob(f"*{args.post}*.json"))
-        if not candidates:
-            print(f"❌ Post not found: {args.post}")
+    content = get_post(args.post)
+    if not content:
+        # try without post_ prefix
+        content = get_post(f"post_{args.post}")
+        if not content:
+            print(f"❌ Post not found in DB: {args.post}")
             sys.exit(1)
-        post_file = candidates[0]
-
-    with open(post_file) as f:
-        content = json.load(f)
 
     if content.get("status") not in ("approved", "draft"):
         print(f"⚠️  Post status is '{content.get('status')}'. Only 'approved' or 'draft' posts can be generated.")

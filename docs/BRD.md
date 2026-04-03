@@ -351,7 +351,7 @@ baba-app/
 | TikTok API | TikTok for Developers API |
 | AI / LLM | OpenAI / Anthropic / Gemini (TBD) |
 | Config | `python-dotenv` |
-| CLI | `typer` |
+| CLI | `argparse` |
 
 ---
 
@@ -361,3 +361,4 @@ baba-app/
 |---------|---------|
 | 1.0 | Initial BRD draft |
 | 1.1 | Decisions updated: all platforms, both IG formats, both TikTok formats, manual approval, niche = AI/DS only for now |
+| 1.2 | Phase 3 completion: Updated template sizes, switched CLI from typer to argparse |

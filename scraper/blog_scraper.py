@@ -145,13 +145,12 @@ def scrape_article(url: str, niche: str = DEFAULT_NICHE, download_imgs: bool = T
         "content_plan_id": None,
     }
 
-    # Save to data/raw/
-    out_path = DATA_RAW_DIR / f"{raw_id}.json"
-    with open(out_path, "w") as f:
-        json.dump(item, f, indent=2, ensure_ascii=False)
+    # Save to SQLite database
+    from src.database import save_raw
+    save_raw(item)
 
     mark_seen(url)
-    print(f"[blog_scraper] Saved → {out_path}")
+    print(f"[blog_scraper] Saved to DB → {raw_id}")
     return item
 
 
