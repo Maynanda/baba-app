@@ -27,10 +27,11 @@ st.title("🚀 Baba-App Studio")
 # ─────────────────────────────────────────────────────────────
 # TAB SETUP
 # ─────────────────────────────────────────────────────────────
-tab_portal, tab_scraper, tab_db, tab_generator = st.tabs([
+tab_portal, tab_scraper, tab_db, tab_studio, tab_generator = st.tabs([
     "🧭 Portal Discovery",
     "📡 Scraper Console", 
     "🗃️ Content Database", 
+    "✍️ Content Studio",
     "🎨 Visual Generator"
 ])
 
@@ -69,13 +70,17 @@ with tab_portal:
         if st.button("🔍 Run Portal Discovery", use_container_width=True):
             with st.spinner("Scraping all configured portals..."):
                 from scraper.portal_scraper import run_all_portals
-                count = run_all_portals()
-                st.success(f"Discovered {count} new articles!")
-                st.rerun()
+                from scraper.parser_generator import CFG_PATH
+                if not CFG_PATH.exists():
+                    st.warning("No portals saved! Use the ➕ Add New Portal section above first.")
+                else:
+                    count = run_all_portals()
+                    st.success(f"Discovered {count} new articles!")
                 
     st.write("Select the articles you want to deep-scrape into your Raw Intelligence database.")
     
     from src.database import get_all_discovered, mark_discovered_scraped
+    from scraper.blog_scraper import scrape_article
     disc_items = get_all_discovered(status="discovered")
     
     if disc_items:
@@ -98,6 +103,8 @@ with tab_portal:
                         scrape_article(row['url'])
                         mark_discovered_scraped(row['url'])
                 st.success("Batch Deep Scraping complete! Items moved to Content Database > Raw Intelligence.")
+                import time
+                time.sleep(2)
                 st.rerun()
     else:
         st.info("No new articles discovered. Add a portal and hit Run Portal Discovery.")
@@ -161,7 +168,13 @@ with tab_db:
             st.dataframe(df, use_container_width=True, hide_index=True)
             
             st.subheader("Inspect/Edit Post")
-            post_id = st.selectbox("Select Post", df['id'].tolist())
+            # Create a nice mapping of ID -> Title for the dropdown
+            def format_post_label(p_id):
+                row = df[df['id'] == p_id].iloc[0]
+                status = row.get('status', 'draft')
+                return f"[{status.upper()}] {p_id}"
+                
+            post_id = st.selectbox("Select Post", df['id'].tolist(), format_func=format_post_label)
             post_data = get_post(post_id)
             if post_data:
                 new_status = st.selectbox("Status", ["draft", "approved", "published"], index=["draft", "approved", "published"].index(post_data.get("status", "draft")))
@@ -186,7 +199,13 @@ with tab_db:
             st.dataframe(df_display, use_container_width=True, hide_index=True)
             
             st.subheader("Inspect Raw Data")
-            raw_id = st.selectbox("Select Scraped Item", df['id'].tolist())
+            
+            def format_raw_label(r_id):
+                title = df[df['id'] == r_id].iloc[0]['title']
+                source = df[df['id'] == r_id].iloc[0]['source']
+                return f"[{source.upper()}] {title}"
+                
+            raw_id = st.selectbox("Select Scraped Item", df['id'].tolist(), format_func=format_raw_label)
             
             # Find the selected item's full JSON
             selected_row = df[df['id'] == raw_id].iloc[0]
@@ -210,7 +229,105 @@ with tab_db:
             st.info("No raw intelligence found.")
 
 # ─────────────────────────────────────────────────────────────
-# 🎨 TAB 3: VISUAL GENERATOR
+# ✍️ TAB 3: CONTENT STUDIO
+# ─────────────────────────────────────────────────────────────
+with tab_studio:
+    st.header("Content Creation Studio")
+    st.write("Write your content manually using scraped references before generating visuals.")
+    
+    col_ref, col_form = st.columns([1, 1], gap="large")
+    
+    with col_ref:
+        st.subheader("Reference Material")
+        raw_items = get_all_raw()
+        if not raw_items:
+            st.info("No scraped intelligence found.")
+        else:
+            def format_studio_raw_label(r):
+                return f"[{r['source'].upper()}] {r['title'][:60]}"
+            
+            selected_ref = st.selectbox("Select Scraped Reference", raw_items, format_func=format_studio_raw_label)
+            
+            if selected_ref:
+                raw_data = json.loads(selected_ref['data_json'])
+                with st.container(height=650):
+                    st.markdown(f"### {raw_data.get('title')}")
+                    st.caption(f"Source: {raw_data.get('source_url')} | Author: {raw_data.get('author')}")
+                    
+                    images = raw_data.get("local_images", [])
+                    if images:
+                        st.write("**Extracted Images:**")
+                        cols = st.columns(2)
+                        for i, img in enumerate(images[:4]):
+                            try:
+                                cols[i%2].image(img, use_column_width=True)
+                            except:
+                                pass
+                                
+                    st.write("---")
+                    st.write(raw_data.get('body', 'No body text extracted.'))
+
+    with col_form:
+        st.subheader("Content Builder")
+        
+        # Load available templates
+        registry_path = TEMPLATES_DIR / "registry.json"
+        if registry_path.exists():
+            with open(registry_path) as f:
+                reg = json.load(f)
+            template_choices = {t['id']: t for t in reg.get('templates', []) if t.get('status') == 'ready'}
+        else:
+            template_choices = {}
+            
+        if not template_choices:
+            st.warning("No complete templates found in registry.")
+        else:
+            with st.form("studio_form"):
+                post_name = st.text_input("Post Name", value="my_new_post", help="Unique identifier, must have no spaces.")
+                selected_tmpl_id = st.selectbox("Select Template", list(template_choices.keys()))
+                
+                platforms = st.multiselect("Platforms", ["linkedin", "instagram_feed", "instagram_story", "tiktok"], default=["linkedin"])
+                niche = st.text_input("Niche", value="ai-engineering")
+                
+                st.divider()
+                st.write("**Slide Variables**")
+                
+                # Fetch placeholders dynamically
+                tmpl_meta = load_template_metadata(selected_tmpl_id)
+                placeholders = tmpl_meta.get("placeholders", [])
+                
+                form_data = {}
+                for ph in placeholders:
+                    # Heuristic to make body text larger than title inputs
+                    if "TITLE" in ph or "SUB" in ph:
+                        form_data[ph] = st.text_input(ph)
+                    else:
+                        form_data[ph] = st.text_area(ph, height=80)
+                        
+                submitted = st.form_submit_button("Save Post to Database", type="primary")
+                
+                if submitted:
+                    if not post_name.replace("_", "").isalnum():
+                        st.error("Post Name should be alphanumeric.")
+                    else:
+                        post_id = f"post_{post_name}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+                        new_post = {
+                            "id": post_id,
+                            "status": "draft",
+                            "niche": niche,
+                            "template": selected_tmpl_id,
+                            "platform": platforms,
+                            "post_date": "",
+                            "scheduled_time": "",
+                            "source_url": selected_ref["url"] if selected_ref else "",
+                            "slides": [form_data]
+                        }
+                        
+                        save_post(new_post)
+                        st.success(f"Post saved as Draft! Head to the Visual Generator tab to render it.")
+
+# ─────────────────────────────────────────────────────────────
+# 🎨 TAB 4: VISUAL GENERATOR
 # ─────────────────────────────────────────────────────────────
 with tab_generator:
     st.header("Generate & Preview Visuals")

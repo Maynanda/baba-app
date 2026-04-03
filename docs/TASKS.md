@@ -157,6 +157,17 @@
 
 ---
 
+## Phase 3.7 — Manual Content Studio ✅ COMPLETE
+> Goal: Provide a side-by-side UI to manually copywrite visual carousels using raw scraped reference data.
+
+### Streamlit `app.py` updates
+- [x] Add `✍️ Content Studio` Split-Screen Tab 
+- [x] Implement Left Column: Interactive Raw Intelligence Inspector
+- [x] Implement Right Column: Dynamic Form Engine based on `template.json` logic
+- [x] Implement DB save utilizing `src.database.save_post()`
+
+---
+
 ## Phase 4 — Publisher & Scheduler
 > Goal: Post approved content to platforms at scheduled times. Manual approval required.
 
