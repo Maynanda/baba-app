@@ -80,6 +80,10 @@ with tab_db:
         posts = get_all_posts()
         if posts:
             df = pd.DataFrame(posts)
+            # Format timestamps
+            if 'updated_at' in df.columns:
+                df['updated_at'] = pd.to_datetime(df['updated_at']).dt.strftime('%Y-%m-%d %H:%M:%S')
+            
             # Cleanup for display
             df['platforms'] = df['platforms'].apply(lambda x: ", ".join(json.loads(x)) if isinstance(x, str) else x)
             df = df[['id', 'status', 'niche', 'template', 'platforms', 'updated_at']]
@@ -104,8 +108,34 @@ with tab_db:
         raw_items = get_all_raw()
         if raw_items:
             df = pd.DataFrame(raw_items)
-            df = df[['id', 'source', 'niche', 'title', 'scraped_at']]
-            st.dataframe(df, use_container_width=True, hide_index=True)
+            # Format timestamp
+            if 'scraped_at' in df.columns:
+                df['scraped_at'] = pd.to_datetime(df['scraped_at']).dt.strftime('%Y-%m-%d %H:%M:%S')
+                
+            df_display = df[['id', 'source', 'niche', 'title', 'scraped_at']]
+            st.dataframe(df_display, use_container_width=True, hide_index=True)
+            
+            st.subheader("Inspect Raw Data")
+            raw_id = st.selectbox("Select Scraped Item", df['id'].tolist())
+            
+            # Find the selected item's full JSON
+            selected_row = df[df['id'] == raw_id].iloc[0]
+            raw_data = json.loads(selected_row['data_json'])
+            
+            # Show images if any exist
+            local_images = raw_data.get("local_images", [])
+            if local_images:
+                st.write("**Extracted Images:**")
+                img_cols = st.columns(min(len(local_images), 4))
+                for i, img_path in enumerate(local_images):
+                    try:
+                        with img_cols[i % 4]:
+                            st.image(img_path, use_column_width=True)
+                    except Exception as e:
+                        pass
+            
+            with st.expander("Show Full JSON Data"):
+                st.json(raw_data)
         else:
             st.info("No raw intelligence found.")
 
