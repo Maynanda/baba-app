@@ -82,29 +82,30 @@
 
 ---
 
-## Phase 3 — Generator Refactor
+## Phase 3 — Generator Refactor ✅ COMPLETE
 > Goal: Multi-platform visual generation. User picks platform + template at generation time.
 
 ### `src/generator/base.py`
-- [ ] Refactor existing `generator.py` logic into `base.py`
-- [ ] `load_template(template_id)` — look up from `templates/registry.json`
-- [ ] `fill_placeholders(pptx, data)` — existing replace logic
-- [ ] `export_pdf(pptx_path)` — LibreOffice conversion
-- [ ] `export_images(pdf_path, output_dir)` — pdf2image conversion
+- [x] Refactor existing `generator.py` logic into `base.py`
+- [x] `load_template(template_id)` — look up from `templates/registry.json`
+- [x] `fill_placeholders(pptx, data)` — existing replace logic
+- [x] `export_pdf(pptx_path)` — LibreOffice conversion
+- [x] `export_images(pdf_path, output_dir)` — pdf2image conversion
 
 ### `src/generator/linkedin.py`
-- [ ] `generate(post_id, template_id)` → PDF carousel in `output/pdf/`
+- [x] `generate(post_id, template_id)` → PDF carousel in `output/pdf/`
 
 ### `src/generator/instagram.py`
-- [ ] `generate_feed(post_id, template_id)` → 1:1 PNG images in `output/images/instagram_feed/`
-- [ ] `generate_story(post_id, template_id)` → 9:16 PNG images in `output/images/instagram_story/`
+- [x] `generate_feed(post_id, template_id)` → 1:1 PNG images in `output/images/instagram_feed/`
+- [x] `generate_story(post_id, template_id)` → 9:16 PNG images in `output/images/instagram_story/`
 
 ### `src/generator/tiktok.py`
-- [ ] `generate_slideshow(post_id, template_id)` → 9:16 PNG images in `output/images/tiktok/`
+- [x] `generate_slideshow(post_id, template_id)` → 9:16 PNG images in `output/images/tiktok/`
 
 ### Template Engine
-- [ ] Create `templates/story_dark_9x16/` — 9:16 dark template for IG Story + TikTok
-- [ ] `src/create_template.py` → parametrize for 1:1 vs 9:16
+- [x] Create `templates/story_dark_9x16/` — 9:16 dark template for IG Story + TikTok
+- [x] `src/create_template.py` → parametrize for 1:1 vs 9:16
+
 
 ---
 

@@ -2,7 +2,10 @@
   "id": "sample_post",
   "status": "draft",
   "platform": [
-    "linkedin"
+    "linkedin",
+    "instagram_feed",
+    "instagram_story",
+    "tiktok"
   ],
   "niche": "ai-engineering",
   "template": "carousel_dark_1x1",

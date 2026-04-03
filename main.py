@@ -204,20 +204,29 @@ def cmd_generate(args):
 
 
 def _run_generator(content, platform, template_id):
-    if platform == "linkedin":
-        try:
-            sys.path.insert(0, str(BASE_DIR / "src"))
-            from generator import generate_carousel
-            from config.settings import DATA_CONTENT_DIR
-            tmp = DATA_CONTENT_DIR / f"{content['id']}.json"
-            if not tmp.exists():
-                with open(tmp, "w") as f:
-                    json.dump(content, f)
-            generate_carousel(str(tmp))
-        except Exception as e:
-            print(f"   ❌ Generator error: {e}")
-    else:
-        print(f"   ⏳ Platform '{platform}' generator coming in Phase 3.")
+    import sys
+    sys.path.insert(0, str(BASE_DIR))
+    
+    try:
+        if platform == "linkedin":
+            from src.generator.linkedin import generate
+            generate(content, template_id)
+        elif platform == "instagram_feed":
+            from src.generator.instagram import generate_feed
+            generate_feed(content, template_id)
+        elif platform == "instagram_story":
+            from src.generator.instagram import generate_story
+            # Use story template if none specified properly, but the logic handles passing template_id
+            story_template_id = "story_dark_9x16" if template_id == "carousel_dark_1x1" else template_id
+            generate_story(content, story_template_id)
+        elif platform == "tiktok":
+            from src.generator.tiktok import generate_slideshow
+            story_template_id = "story_dark_9x16" if template_id == "carousel_dark_1x1" else template_id
+            generate_slideshow(content, story_template_id)
+        else:
+            print(f"   ⏳ Platform '{platform}' is unknown.")
+    except Exception as e:
+        print(f"   ❌ Generator error: {e}")
 
 
 # ─────────────────────────────────────────────────────────────

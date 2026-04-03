@@ -15,7 +15,7 @@
       "platforms": ["instagram_story", "tiktok"],
       "aspect_ratio": "9:16",
       "niche": ["ai-engineering", "data-science"],
-      "status": "planned",
+      "status": "ready",
       "path": "story_dark_9x16/main_story.pptx"
     }
   ]
