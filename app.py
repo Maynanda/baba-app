@@ -27,11 +27,81 @@ st.title("🚀 Baba-App Studio")
 # ─────────────────────────────────────────────────────────────
 # TAB SETUP
 # ─────────────────────────────────────────────────────────────
-tab_scraper, tab_db, tab_generator = st.tabs([
+tab_portal, tab_scraper, tab_db, tab_generator = st.tabs([
+    "🧭 Portal Discovery",
     "📡 Scraper Console", 
     "🗃️ Content Database", 
     "🎨 Visual Generator"
 ])
+
+# ─────────────────────────────────────────────────────────────
+# 🧭 TAB 0: PORTAL DISCOVERY
+# ─────────────────────────────────────────────────────────────
+with tab_portal:
+    st.header("Portal Manager & Auto-Parser")
+    
+    # --- AUTO PARSER ---
+    with st.expander("➕ Add New Portal (Auto-Parser)"):
+        st.write("Give me any news portal URL. My heuristic engine will analyze the DOM and auto-generate the CSS rules to extract its articles.")
+        new_url = st.text_input("Portal URL (e.g. https://techcrunch.com/category/artificial-intelligence/)")
+        if st.button("Generate Parser & Preview"):
+            with st.spinner("Analyzing site structure..."):
+                from scraper.parser_generator import generate_parser_for_url, save_portal_config
+                result = generate_parser_for_url(new_url)
+                if "error" in result:
+                    st.error(result["error"])
+                else:
+                    st.success("Parser generated successfully!")
+                    st.json(result["config"])
+                    st.write("**Preview of articles found:**")
+                    st.dataframe(result["preview_links"])
+                    if st.button("Save Configuration", key="save_parser"):
+                        save_portal_config(result["config"])
+                        st.success("Configuration added to config/portals.yaml! You can now Discover articles from it.")
+                        st.rerun()
+
+    # --- DISCOVERY ENGINE ---
+    st.divider()
+    st.subheader("Curation Hub")
+    
+    col1, col2 = st.columns([1, 4])
+    with col1:
+        if st.button("🔍 Run Portal Discovery", use_container_width=True):
+            with st.spinner("Scraping all configured portals..."):
+                from scraper.portal_scraper import run_all_portals
+                count = run_all_portals()
+                st.success(f"Discovered {count} new articles!")
+                st.rerun()
+                
+    st.write("Select the articles you want to deep-scrape into your Raw Intelligence database.")
+    
+    from src.database import get_all_discovered, mark_discovered_scraped
+    disc_items = get_all_discovered(status="discovered")
+    
+    if disc_items:
+        df_disc = pd.DataFrame(disc_items)
+        df_disc.insert(0, "Select", False) # Checkbox column
+        df_disc = df_disc[['Select', 'portal_id', 'title', 'url', 'discovered_at']]
+        
+        edited_df = st.data_editor(
+            df_disc, 
+            hide_index=True, 
+            use_container_width=True,
+            column_config={"url": st.column_config.LinkColumn("Article URL")}
+        )
+        
+        selected_rows = edited_df[edited_df.Select]
+        if not selected_rows.empty:
+            if st.button(f"Deep Scrape ({len(selected_rows)}) Articles", type="primary"):
+                with st.spinner("Executing deep scrape (extracting text & images)..."):
+                    for _, row in selected_rows.iterrows():
+                        scrape_article(row['url'])
+                        mark_discovered_scraped(row['url'])
+                st.success("Batch Deep Scraping complete! Items moved to Content Database > Raw Intelligence.")
+                st.rerun()
+    else:
+        st.info("No new articles discovered. Add a portal and hit Run Portal Discovery.")
+
 
 # ─────────────────────────────────────────────────────────────
 # 📡 TAB 1: SCRAPER CONSOLE

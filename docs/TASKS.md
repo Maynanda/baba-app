@@ -139,6 +139,24 @@
 
 ---
 
+## Phase 3.6 — Portal Discovery & Auto-Parser ✅ COMPLETE
+> Goal: Advanced multi-step scraping system that auto-generates CSS rules for any info source.
+
+### Database updates
+- [x] Add `discovered_links` table in `src/database.py`
+
+### Auto-Parser & Discovery
+- [x] `scraper/parser_generator.py` — Auto-detect rules using heuristics
+- [x] `config/portals.yaml` — Initialize config format
+- [x] `scraper/portal_scraper.py` — Scrape portals based on generated config
+
+### Streamlit `app.py` updates
+- [x] **Tab: Portal Manager** — Connect auto-parser to Streamlit UI
+- [x] **Discovery Interactive Table** — Connect selection to `database.py`
+- [x] **Deep Scrape trigger** — Connect `blog_scraper` over selected curated items
+
+---
+
 ## Phase 4 — Publisher & Scheduler
 > Goal: Post approved content to platforms at scheduled times. Manual approval required.
 

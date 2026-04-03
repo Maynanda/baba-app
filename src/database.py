@@ -54,7 +54,46 @@ def init_db(conn=None):
     )
     """)
     
+    # Track intermediate discovered links from portal scraping
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS discovered_links (
+        id TEXT PRIMARY KEY,
+        portal_id TEXT,
+        url TEXT UNIQUE,
+        title TEXT,
+        status TEXT,
+        discovered_at TIMESTAMP
+    )
+    """)
+    
     conn.commit()
+
+# --- DISCOVERED LINKS ---
+def save_discovered(portal_id: str, url: str, title: str):
+    conn = get_connection()
+    c = conn.cursor()
+    _id = f"disc_{datetime.now().strftime('%Y%m%d%H%M%S')}_{abs(hash(url)) % 10000}"
+    c.execute("""
+        INSERT OR IGNORE INTO discovered_links (id, portal_id, url, title, status, discovered_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+    """, (_id, portal_id, url, title, "discovered", datetime.now().isoformat()))
+    conn.commit()
+    conn.close()
+
+def get_all_discovered(status="discovered"):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT * FROM discovered_links WHERE status = ? ORDER BY discovered_at DESC", (status,))
+    rows = c.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+def mark_discovered_scraped(url: str):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("UPDATE discovered_links SET status = 'scraped' WHERE url = ?", (url,))
+    conn.commit()
+    conn.close()
 
 # --- RAW CONTENT ---
 def save_raw(data: dict):
