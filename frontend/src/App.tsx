@@ -1,63 +1,129 @@
-import React, { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import { Layout, Menu, theme } from 'antd';
+/**
+ * App.tsx
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Root application — horizontal top-nav header layout.
+ * No sidebar. Navigation lives in the top Header bar.
+ *
+ * Rule for agents: To add a new page:
+ *  1. Create the page file in src/pages/
+ *  2. Add the import here
+ *  3. Add a <Route> entry in the Routes block
+ *  4. Add a matching item to navItems below
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+
+import React from 'react';
 import {
-  DatabaseOutlined,
-  DashboardOutlined,
-  FormatPainterOutlined,
-  EditOutlined,
+  BrowserRouter as Router, Routes, Route, Link, useLocation,
+} from 'react-router-dom';
+import { Layout, Menu, Typography, Space } from 'antd';
+import {
+  DatabaseOutlined, CloudSyncOutlined,
+  FormatPainterOutlined, EditOutlined, RobotOutlined,
 } from '@ant-design/icons';
-import DataManagement from './pages/DataManagement';
 
-const { Header, Content, Footer, Sider } = Layout;
+// ── Page imports ──────────────────────────────────────────────────────────────
+import DataManagement  from './pages/DataManagement';
+import ScraperConsole  from './pages/ScraperConsole';
+import VisualGenerator from './pages/VisualGenerator';
+import ContentStudio   from './pages/ContentStudio';
 
-const App: React.FC = () => {
-  const [collapsed, setCollapsed] = useState(false);
-  const {
-    token: { colorBgContainer, borderRadiusLG },
-  } = theme.useToken();
+const { Header, Content } = Layout;
+const { Text } = Typography;
 
-  const menuItems = [
-    { key: '1', icon: <DashboardOutlined />, label: <Link to="/">Scraper Console</Link> },
-    { key: '2', icon: <DatabaseOutlined />, label: <Link to="/data">Data Management</Link> },
-    { key: '3', icon: <FormatPainterOutlined />, label: <Link to="/generator">Visual Generator</Link> },
-    { key: '4', icon: <EditOutlined />, label: <Link to="/studio">Content Studio</Link> },
-  ];
+// ── Nav items definition ──────────────────────────────────────────────────────
+// key must match the Route path (without leading /)
+const navItems = [
+  {
+    key: 'scraper',
+    icon: <CloudSyncOutlined />,
+    label: <Link to="/scraper">Scraper</Link>,
+  },
+  {
+    key: 'data',
+    icon: <DatabaseOutlined />,
+    label: <Link to="/data">Data</Link>,
+  },
+  {
+    key: 'generator',
+    icon: <FormatPainterOutlined />,
+    label: <Link to="/generator">Generator</Link>,
+  },
+  {
+    key: 'studio',
+    icon: <EditOutlined />,
+    label: <Link to="/studio">Content Studio</Link>,
+  },
+];
+
+// ── Inner layout ──────────────────────────────────────────────────────────────
+const AppLayout: React.FC = () => {
+  const location = useLocation();
+  const selectedKey = location.pathname.split('/')[1] || 'data';
 
   return (
-    <Router>
-      <Layout style={{ minHeight: '100vh' }}>
-        <Sider collapsible collapsed={collapsed} onCollapse={(value) => setCollapsed(value)}>
-          <div className="demo-logo-vertical" style={{ height: 32, margin: 16, background: 'rgba(255, 255, 255, 0.2)', borderRadius: 6 }} />
-          <Menu theme="dark" defaultSelectedKeys={['2']} mode="inline" items={menuItems} />
-        </Sider>
-        <Layout>
-          <Header style={{ padding: 0, background: colorBgContainer }} />
-          <Content style={{ margin: '0 16px' }}>
-            <div
-              style={{
-                padding: 24,
-                minHeight: 360,
-                background: colorBgContainer,
-                borderRadius: borderRadiusLG,
-                marginTop: 16,
-              }}
-            >
-              <Routes>
-                <Route path="/" element={<h2>Scraper Console (Coming Soon)</h2>} />
-                <Route path="/data" element={<DataManagement />} />
-                <Route path="/generator" element={<h2>Visual Generator (Coming Soon)</h2>} />
-                <Route path="/studio" element={<h2>Content Studio (Coming Soon)</h2>} />
-              </Routes>
-            </div>
-          </Content>
-          <Footer style={{ textAlign: 'center' }}>
-            Baba-App Content Studio ©{new Date().getFullYear()} created for AI Engineering
-          </Footer>
-        </Layout>
-      </Layout>
-    </Router>
+    <Layout style={{ minHeight: '100vh', background: '#f5f5f5' }}>
+      {/* ── Top Header ─────────────────────────────────────────────────────── */}
+      <Header
+        style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 100,
+          display: 'flex',
+          alignItems: 'center',
+          padding: '0 24px',
+          background: '#0f172a',
+          borderBottom: '1px solid #1e293b',
+          height: 52,
+        }}
+      >
+        {/* Brand */}
+        <Space style={{ marginRight: 32, flexShrink: 0 }}>
+          <RobotOutlined style={{ color: '#38bdf8', fontSize: 18 }} />
+          <Text strong style={{ color: '#fff', fontSize: 15, letterSpacing: 0.5 }}>
+            Baba-App
+          </Text>
+          <Text style={{ color: '#475569', fontSize: 11 }}>
+            Content Automation
+          </Text>
+        </Space>
+
+        {/* Navigation */}
+        <Menu
+          mode="horizontal"
+          selectedKeys={[selectedKey]}
+          items={navItems}
+          style={{
+            flex: 1,
+            background: 'transparent',
+            border: 'none',
+            color: '#94a3b8',
+            lineHeight: '50px',
+          }}
+          theme="dark"
+        />
+      </Header>
+
+      {/* ── Page Content ───────────────────────────────────────────────────── */}
+      <Content style={{ padding: '20px 24px' }}>
+        {/* Agent rule: Add new <Route> here when adding a page */}
+        <Routes>
+          <Route path="/"          element={<DataManagement />} />
+          <Route path="/scraper"   element={<ScraperConsole />} />
+          <Route path="/data"      element={<DataManagement />} />
+          <Route path="/generator" element={<VisualGenerator />} />
+          <Route path="/studio"    element={<ContentStudio />} />
+        </Routes>
+      </Content>
+    </Layout>
   );
 };
+
+// ── Root export ───────────────────────────────────────────────────────────────
+const App: React.FC = () => (
+  <Router>
+    <AppLayout />
+  </Router>
+);
 
 export default App;

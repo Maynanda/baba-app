@@ -1,13 +1,32 @@
-from fastapi import FastAPI, HTTPException
+"""
+main_api.py
+─────────────────────────────────────────────────────────────────────────────
+Baba-App FastAPI Backend — Central entry point for all REST endpoints.
+
+Architecture rule (for agents):
+  - This file registers ROUTERS only. All business logic lives in api/routers/.
+  - To add a new feature: create a new file in api/routers/, define an
+    APIRouter, then include it here with include_router().
+
+Run: uvicorn main_api:app --reload
+Docs: http://localhost:8000/docs
+─────────────────────────────────────────────────────────────────────────────
+"""
+
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
 import uvicorn
 
-import src.database as db
+# ── Router imports ─────────────────────────────────────────────────────────────
+from api.routers import data, scraper, generator
 
-app = FastAPI(title="Baba-App API", version="1.0.0")
+app = FastAPI(
+    title="Baba-App API",
+    version="2.0.0",
+    description="Content Automation Platform — AI Engineering & Data Science",
+)
 
-# Allow CORS for local Vite dev server
+# ── CORS — allow local Vite dev server ─────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
@@ -16,25 +35,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/")
-def read_root():
-    return {"message": "Welcome to Baba-App API"}
+# ── Mount routers ──────────────────────────────────────────────────────────────
+# Agent instruction: Add new routers here. Pattern: include_router(module.router, prefix="/api/module")
+app.include_router(data.router,      prefix="/api/data",      tags=["Data"])
+app.include_router(scraper.router,   prefix="/api/scrape",    tags=["Scraper"])
+app.include_router(generator.router, prefix="/api/generator", tags=["Generator"])
 
-@app.get("/api/data/raw")
-def get_raw_data():
-    try:
-        data = db.get_all_raw()
-        return {"data": data}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+@app.get("/", tags=["Health"])
+def health_check():
+    return {"status": "ok", "app": "Baba-App API", "version": "2.0.0"}
 
-@app.get("/api/data/content")
-def get_content_data():
-    try:
-        posts = db.get_all_posts()
-        return {"data": posts}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     uvicorn.run("main_api:app", host="0.0.0.0", port=8000, reload=True)
