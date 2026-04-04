@@ -45,10 +45,11 @@ with tab_portal:
     with st.expander("➕ Add New Portal (Auto-Parser)"):
         st.write("Give me any news portal URL. My heuristic engine will analyze the DOM and auto-generate the CSS rules to extract its articles.")
         new_url = st.text_input("Portal URL (e.g. https://techcrunch.com/category/artificial-intelligence/)")
+        stealth_parser = st.checkbox("🕵️‍♂️ Enable Stealth Mode (Anti-bot bypass)", key="stealth_parser", help="Slower but bypasses Cloudflare/incapsula.")
         if st.button("Generate Parser & Preview"):
             with st.spinner("Analyzing site structure..."):
                 from scraper.parser_generator import generate_parser_for_url, save_portal_config
-                result = generate_parser_for_url(new_url)
+                result = generate_parser_for_url(new_url, use_stealth=stealth_parser)
                 if "error" in result:
                     st.error(result["error"])
                 else:
@@ -67,6 +68,7 @@ with tab_portal:
     
     col1, col2 = st.columns([1, 4])
     with col1:
+        stealth_discovery = st.checkbox("🕵️‍♂️ Enable Stealth Mode", key="stealth_disc")
         if st.button("🔍 Run Portal Discovery", use_container_width=True):
             with st.spinner("Scraping all configured portals..."):
                 from scraper.portal_scraper import run_all_portals
@@ -74,7 +76,7 @@ with tab_portal:
                 if not CFG_PATH.exists():
                     st.warning("No portals saved! Use the ➕ Add New Portal section above first.")
                 else:
-                    count = run_all_portals()
+                    count = run_all_portals(use_stealth=stealth_discovery)
                     st.success(f"Discovered {count} new articles!")
                 
     st.write("Select the articles you want to deep-scrape into your Raw Intelligence database.")
@@ -97,10 +99,11 @@ with tab_portal:
         
         selected_rows = edited_df[edited_df.Select]
         if not selected_rows.empty:
+            stealth_deep = st.checkbox("🕵️‍♂️ Enable Stealth Mode for Deep Scrape", key="stealth_deep")
             if st.button(f"Deep Scrape ({len(selected_rows)}) Articles", type="primary"):
                 with st.spinner("Executing deep scrape (extracting text & images)..."):
                     for _, row in selected_rows.iterrows():
-                        scrape_article(row['url'])
+                        scrape_article(row['url'], use_stealth=stealth_deep)
                         mark_discovered_scraped(row['url'])
                 st.success("Batch Deep Scraping complete! Items moved to Content Database > Raw Intelligence.")
                 import time
@@ -122,9 +125,10 @@ with tab_scraper:
         st.subheader("Scrape Single URL")
         url_input = st.text_input("Article URL")
         niche_input = st.text_input("Niche", value="ai-engineering")
+        stealth_single = st.checkbox("🕵️‍♂️ Enable Stealth Mode", key="stealth_single")
         if st.button("Scrape URL"):
             with st.spinner("Scraping..."):
-                res = scrape_article(url_input, niche=niche_input)
+                res = scrape_article(url_input, niche=niche_input, use_stealth=stealth_single)
                 if res:
                     st.success(f"Successfully scraped: {res['title']}")
                 else:

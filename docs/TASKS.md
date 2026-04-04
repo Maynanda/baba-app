@@ -187,6 +187,15 @@
 
 ---
 
+## Phase 3.10 — Stealth Mode Toggles ✅ COMPLETE
+> Goal: Introduce native Streamlit UI checkboxes to conditionally trigger anti-detect `StealthyFetcher` modes across scraping endpoints.
+
+- [x] Add dependency (`patchright`).
+- [x] Update scrape endpoints with `use_stealth=False` parameter logic.
+- [x] Integrate global UI checkboxes in `app.py` for Discovery, Deep Scrape, and Single URL flows.
+
+---
+
 ## Phase 4 — Publisher & Scheduler
 > Goal: Post approved content to platforms at scheduled times. Manual approval required.
 

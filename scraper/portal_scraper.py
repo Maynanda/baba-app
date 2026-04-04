@@ -8,7 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from src.database import save_discovered, is_url_seen
 from scraper.parser_generator import CFG_PATH
 
-def run_all_portals():
+def run_all_portals(use_stealth: bool = False):
     if not CFG_PATH.exists():
         print("[portal_scraper] No portals configuration found.")
         return 0
@@ -21,9 +21,13 @@ def run_all_portals():
     
     for p in portals:
         try:
-            from scrapling import Fetcher
             print(f"[portal_scraper] Scraping portal: {p['url']}")
-            page = Fetcher.get(p["url"])
+            if use_stealth:
+                from scrapling import StealthyFetcher
+                page = StealthyFetcher.fetch(p["url"])
+            else:
+                from scrapling import Fetcher
+                page = Fetcher.get(p["url"])
             
             domain = urlparse(p["url"]).netloc
             links = page.css(p["selectors"]["link"])
@@ -36,7 +40,7 @@ def run_all_portals():
                 if href.startswith("/"):
                     href = f"https://{domain}{href}"
                     
-                title = a.text.strip() if a.text else ""
+                title = a.get_all_text().strip() if hasattr(a, 'get_all_text') and a.get_all_text() else ""
                 if len(title) < 10:
                     continue
                     

@@ -57,10 +57,10 @@ def _extract_body(page) -> str:
     for selector in ["article", "main", ".post-content", ".entry-content", ".article-body"]:
         containers = page.css(selector)
         if containers:
-            return containers[0].text
+            return containers[0].get_all_text()
     # Fallback: all paragraphs
     paras = page.css("p")
-    return "\n".join(p.text.strip() for p in paras if p.text and len(p.text.strip()) > 50)
+    return "\n".join(p.get_all_text().strip() for p in paras if p.get_all_text() and len(p.get_all_text().strip()) > 50)
 
 
 def _extract_keywords(page, title: str) -> list[str]:
@@ -75,7 +75,7 @@ def _extract_keywords(page, title: str) -> list[str]:
     return kws
 
 
-def scrape_article(url: str, niche: str = DEFAULT_NICHE, download_imgs: bool = True) -> dict | None:
+def scrape_article(url: str, niche: str = DEFAULT_NICHE, download_imgs: bool = True, use_stealth: bool = False) -> dict | None:
     """
     Scrape a single article URL and return a structured raw item dict.
     Returns None if the URL is a duplicate or fetch fails.
@@ -86,22 +86,26 @@ def scrape_article(url: str, niche: str = DEFAULT_NICHE, download_imgs: bool = T
 
     print(f"[blog_scraper] Scraping: {url}")
     try:
-        from scrapling import Fetcher
-        page = Fetcher.get(url)
+        if use_stealth:
+            from scrapling import StealthyFetcher
+            page = StealthyFetcher.fetch(url)
+        else:
+            from scrapling import Fetcher
+            page = Fetcher.get(url)
     except Exception as e:
         print(f"[blog_scraper] Fetch failed: {e}")
         return None
 
     # Title
     title_tags = page.css("h1") or page.css("title")
-    title = title_tags[0].text if title_tags else "Untitled"
+    title = title_tags[0].get_all_text().strip() if title_tags else "Untitled"
 
     # Author
     author = ""
     for sel in ['[rel="author"]', ".author", ".byline", 'meta[name="author"]']:
         tags = page.css(sel)
         if tags:
-            author = tags[0].attrib.get("content", "") or tags[0].text
+            author = tags[0].attrib.get("content", "") or tags[0].get_all_text().strip()
             break
 
     # Published date
@@ -109,7 +113,7 @@ def scrape_article(url: str, niche: str = DEFAULT_NICHE, download_imgs: bool = T
     for sel in ["time", 'meta[property="article:published_time"]', 'meta[name="date"]']:
         tags = page.css(sel)
         if tags:
-            pub_date = tags[0].attrib.get("datetime", "") or tags[0].attrib.get("content", "") or tags[0].text
+            pub_date = tags[0].attrib.get("datetime", "") or tags[0].attrib.get("content", "") or tags[0].get_all_text().strip()
             break
 
     # Body & images

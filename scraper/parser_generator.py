@@ -14,11 +14,15 @@ def get_css_signature(element):
         parts.append("." + classes.split()[0])
     return "".join(parts)
 
-def generate_parser_for_url(url: str, niche: str = "ai-engineering") -> dict:
+def generate_parser_for_url(url: str, niche: str = "ai-engineering", use_stealth: bool = False) -> dict:
     """Heuristic engine to discover CSS selectors for article links on a portal."""
     try:
-        from scrapling import Fetcher
-        page = Fetcher.get(url)
+        if use_stealth:
+            from scrapling import StealthyFetcher
+            page = StealthyFetcher.fetch(url)
+        else:
+            from scrapling import Fetcher
+            page = Fetcher.get(url)
     except Exception as e:
         return {"error": f"Failed to fetch {url}: {e}"}
 
@@ -28,7 +32,7 @@ def generate_parser_for_url(url: str, niche: str = "ai-engineering") -> dict:
     parent_signatures = []
 
     for a in page.css("a"):
-        text = a.text.strip() if a.text else ""
+        text = a.get_all_text().strip() if hasattr(a, 'get_all_text') and a.get_all_text() else ""
         href = a.attrib.get("href")
         
         if not href or href.startswith("javascript:") or href.startswith("#"):
