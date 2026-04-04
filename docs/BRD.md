@@ -143,7 +143,7 @@ Scraper → data/raw/ → (AI review) → data/content/ → Generator → output
 }
 ```
 
-**Tech:** `requests`, `beautifulsoup4`, `feedparser`, `pytrends`, `praw` (Reddit)
+**Tech:** `scrapling`, `feedparser`, `pytrends`, `praw` (Reddit)
 
 ---
 
@@ -343,7 +343,7 @@ baba-app/
 | PPTX Generation | `python-pptx` |
 | PDF Conversion | LibreOffice (headless) |
 | Image Conversion | `pdf2image`, `Pillow` |
-| Web Scraping | `requests`, `beautifulsoup4`, `feedparser` |
+| Web Scraping | `scrapling`, `feedparser` |
 | Trend Data | `pytrends`, `praw` (Reddit) |
 | Scheduling | `APScheduler` |
 | LinkedIn API | LinkedIn REST API v2 |
@@ -363,3 +363,4 @@ baba-app/
 | 1.1 | Decisions updated: all platforms, both IG formats, both TikTok formats, manual approval, niche = AI/DS only for now |
 | 1.2 | Phase 3 completion: Updated template sizes, switched CLI from typer to argparse |
 | 1.3 | Phases 3.5–3.7 completion: Replaced flat JSON files with SQLite database. Replaced CLI with Streamlit GUI Dashboard. Added Universal Portal Auto-Parser for discovery engine. Added side-by-side Content Studio. |
+| 1.4 | Phase 3.9 completion: Upgraded scraping engine from static requests/bs4 to Scrapling framework for robust element querying and dynamic fetch resilience. |

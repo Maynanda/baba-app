@@ -1,5 +1,4 @@
-import requests
-from bs4 import BeautifulSoup
+import urllib.request
 from urllib.parse import urlparse
 import yaml
 import sys
@@ -22,23 +21,22 @@ def run_all_portals():
     
     for p in portals:
         try:
+            from scrapling import Fetcher
             print(f"[portal_scraper] Scraping portal: {p['url']}")
-            resp = requests.get(p["url"], headers={"User-Agent": "Mozilla/5.0"}, timeout=15)
-            resp.raise_for_status()
+            page = Fetcher.get(p["url"])
             
-            soup = BeautifulSoup(resp.text, "html.parser")
             domain = urlparse(p["url"]).netloc
-            links = soup.select(p["selectors"]["link"])
+            links = page.css(p["selectors"]["link"])
             
             count = 0
             for a in links:
-                href = a.get("href")
+                href = a.attrib.get("href")
                 if not href:
                     continue
                 if href.startswith("/"):
                     href = f"https://{domain}{href}"
                     
-                title = a.get_text(strip=True)
+                title = a.text.strip() if a.text else ""
                 if len(title) < 10:
                     continue
                     

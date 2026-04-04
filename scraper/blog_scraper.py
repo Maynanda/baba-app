@@ -16,8 +16,7 @@ import argparse
 from datetime import datetime, timezone
 from urllib.parse import urlparse
 
-import requests
-from bs4 import BeautifulSoup
+import urllib.request
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config.settings import DATA_RAW_DIR, DEFAULT_NICHE
@@ -34,11 +33,11 @@ HEADERS = {
 TIMEOUT = 15
 
 
-def _extract_images(soup: BeautifulSoup, base_url: str) -> list[str]:
+def _extract_images(page, base_url: str) -> list[str]:
     """Extract all image src URLs from the article body."""
     imgs = []
-    for tag in soup.select("article img, .post-content img, .entry-content img, main img"):
-        src = tag.get("src") or tag.get("data-src") or ""
+    for tag in page.css("article img, .post-content img, .entry-content img, main img"):
+        src = tag.attrib.get("src") or tag.attrib.get("data-src") or ""
         if src.startswith("http"):
             imgs.append(src)
         elif src.startswith("/"):
@@ -52,24 +51,24 @@ def _extract_images(soup: BeautifulSoup, base_url: str) -> list[str]:
     return seen_imgs[:10]
 
 
-def _extract_body(soup: BeautifulSoup) -> str:
+def _extract_body(page) -> str:
     """Extract main article body text."""
     # Try common article containers in order of preference
     for selector in ["article", "main", ".post-content", ".entry-content", ".article-body"]:
-        container = soup.select_one(selector)
-        if container:
-            return container.get_text(separator="\n", strip=True)
+        containers = page.css(selector)
+        if containers:
+            return containers[0].text
     # Fallback: all paragraphs
-    paras = soup.find_all("p")
-    return "\n".join(p.get_text(strip=True) for p in paras if len(p.get_text(strip=True)) > 50)
+    paras = page.css("p")
+    return "\n".join(p.text.strip() for p in paras if p.text and len(p.text.strip()) > 50)
 
 
-def _extract_keywords(soup: BeautifulSoup, title: str) -> list[str]:
+def _extract_keywords(page, title: str) -> list[str]:
     """Extract keywords from meta tags and title."""
     kws = []
-    meta_kw = soup.find("meta", attrs={"name": "keywords"})
-    if meta_kw and meta_kw.get("content"):
-        kws = [k.strip() for k in meta_kw["content"].split(",")][:8]
+    meta_kw = page.css("meta[name='keywords']")
+    if meta_kw and meta_kw[0].attrib.get("content"):
+        kws = [k.strip() for k in meta_kw[0].attrib.get("content").split(",")][:8]
     if not kws:
         # Fallback: split title into words > 4 chars
         kws = [w for w in title.split() if len(w) > 4][:6]
@@ -87,38 +86,36 @@ def scrape_article(url: str, niche: str = DEFAULT_NICHE, download_imgs: bool = T
 
     print(f"[blog_scraper] Scraping: {url}")
     try:
-        resp = requests.get(url, headers=HEADERS, timeout=TIMEOUT)
-        resp.raise_for_status()
+        from scrapling import Fetcher
+        page = Fetcher.get(url)
     except Exception as e:
         print(f"[blog_scraper] Fetch failed: {e}")
         return None
 
-    soup = BeautifulSoup(resp.text, "html.parser")
-
     # Title
-    title_tag = soup.find("h1") or soup.find("title")
-    title = title_tag.get_text(strip=True) if title_tag else "Untitled"
+    title_tags = page.css("h1") or page.css("title")
+    title = title_tags[0].text if title_tags else "Untitled"
 
     # Author
     author = ""
     for sel in ['[rel="author"]', ".author", ".byline", 'meta[name="author"]']:
-        tag = soup.select_one(sel)
-        if tag:
-            author = tag.get("content", "") or tag.get_text(strip=True)
+        tags = page.css(sel)
+        if tags:
+            author = tags[0].attrib.get("content", "") or tags[0].text
             break
 
     # Published date
     pub_date = ""
     for sel in ["time", 'meta[property="article:published_time"]', 'meta[name="date"]']:
-        tag = soup.select_one(sel)
-        if tag:
-            pub_date = tag.get("datetime", "") or tag.get("content", "") or tag.get_text(strip=True)
+        tags = page.css(sel)
+        if tags:
+            pub_date = tags[0].attrib.get("datetime", "") or tags[0].attrib.get("content", "") or tags[0].text
             break
 
     # Body & images
-    body = _extract_body(soup)
-    image_urls = _extract_images(soup, url)
-    keywords = _extract_keywords(soup, title)
+    body = _extract_body(page)
+    image_urls = _extract_images(page, url)
+    keywords = _extract_keywords(page, title)
 
     # Build raw item ID
     raw_id = f"raw_{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}_{uuid.uuid4().hex[:6]}"

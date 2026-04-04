@@ -177,6 +177,16 @@
 
 ---
 
+## Phase 3.9 — Scrapling Integration ✅ COMPLETE
+> Goal: Replace basic `requests` and `bs4` implementations with the dynamic `Scrapling` framework for resilient and stealthy web scraping.
+
+- [x] Install Scrapling and required stealth dependencies (Playwright, browserforge, etc).
+- [x] Refactor `scraper/blog_scraper.py` to use `Fetcher`.
+- [x] Refactor `scraper/portal_scraper.py` to utilize `Fetcher` logic.
+- [x] Upgrade `scraper/parser_generator.py` Auto-Parser to leverage Scrapling Element attributes (`Adaptor`).
+
+---
+
 ## Phase 4 — Publisher & Scheduler
 > Goal: Post approved content to platforms at scheduled times. Manual approval required.
 

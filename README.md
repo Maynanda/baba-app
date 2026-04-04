@@ -11,6 +11,7 @@ Instead of manually writing and designing posts for every platform, Baba-App act
 - **Streamlit Dashboard**: A beautiful local web interface to visually manage your entire content pipeline, replacing the need to use the terminal.
 - **SQLite Database Architecture**: Manage content states from `raw` (scraped) → `draft` → `approved` → `published` entirely through a fast, local SQLite database instead of messy folders of JSON files.
 - **Auto-Parser Curation Engine**: Give Baba-App *any* news portal URL, and it will mathematically deduce the CSS rules needed to extract articles from it, letting you deep-scrape headlines in bulk.
+- **Scrapling Framework Integration**: Fetches articles reliably by combining general-purpose web scraping resilience with Scrapling's `Fetcher` and Adaptor classes, avoiding basic bot protections automatically!
 - **Manual Content Studio**: A split-screen writing space. Read scraped reference material on the left while seamlessly filling out your visual template form on the right.
 - **Dynamic Template Engine**: Render high-quality images and PDF carousels using simple `.pptx` templates. It supports both square (1:1) and vertical (9:16) aspect ratios.
 - **Multi-Platform Visual Generation**: Generate assets optimized for all major platforms simultaneously:
@@ -94,7 +95,7 @@ python main.py schedule --post my-new-post --time "2026-04-05 09:00"
 
 ```text
 baba-app/
-├── scraper/          ← Trend pulling engines (Reddit, Google, RSS, URL)
+├── scraper/          ← Trend pulling engines powered by Scrapling (Reddit, Google, RSS, URL)
 ├── src/generator/    ← Visual renderers (LinkedIn, Instagram, TikTok)
 ├── config/           ← Settings & configuration
 ├── templates/        ← Presentation layouts (PPTX) and registry

@@ -1,5 +1,4 @@
-import requests
-from bs4 import BeautifulSoup
+import urllib.request
 from urllib.parse import urlparse
 import yaml
 from pathlib import Path
@@ -9,28 +8,28 @@ CFG_PATH = Path(__file__).resolve().parent.parent / "config" / "portals.yaml"
 
 def get_css_signature(element):
     """Generate a CSS signature for an element based on tag and first class."""
-    parts = [element.name]
-    if element.get("class"):
-        parts.append("." + element.get("class")[0])
+    parts = [element.tag]
+    classes = element.attrib.get("class")
+    if classes:
+        parts.append("." + classes.split()[0])
     return "".join(parts)
 
 def generate_parser_for_url(url: str, niche: str = "ai-engineering") -> dict:
     """Heuristic engine to discover CSS selectors for article links on a portal."""
     try:
-        resp = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=15)
-        resp.raise_for_status()
+        from scrapling import Fetcher
+        page = Fetcher.get(url)
     except Exception as e:
         return {"error": f"Failed to fetch {url}: {e}"}
 
-    soup = BeautifulSoup(resp.text, "html.parser")
     domain = urlparse(url).netloc
     
     valid_links = []
     parent_signatures = []
 
-    for a in soup.find_all("a"):
-        text = a.get_text(strip=True)
-        href = a.get("href")
+    for a in page.css("a"):
+        text = a.text.strip() if a.text else ""
+        href = a.attrib.get("href")
         
         if not href or href.startswith("javascript:") or href.startswith("#"):
             continue
@@ -48,10 +47,9 @@ def generate_parser_for_url(url: str, niche: str = "ai-engineering") -> dict:
         if domain not in href:
             continue
             
-        # Core heuristic: Does it wrap an h1/h2/h3 OR is the text decently long?
-        has_heading = a.find(["h1", "h2", "h3", "h4"])
+        has_heading = a.css("h1, h2, h3, h4")
         if has_heading or len(text) > 40:
-            parent = a.find_parent()
+            parent = a.parent
             if parent:
                 parent_sig = get_css_signature(parent)
                 parent_signatures.append(parent_sig)
