@@ -168,6 +168,15 @@
 
 ---
 
+## Phase 3.8 — Content Studio V2 ✅ COMPLETE
+> Goal: Enhance Content Studio with editable raw states, relaxed naming conventions, and real-time previews.
+
+- [x] Fix strict alphanumeric post name convention
+- [x] Add editable feature to raw intelligence viewer
+- [x] Add Preview Visuals functionality using `_run_generator`
+
+---
+
 ## Phase 4 — Publisher & Scheduler
 > Goal: Post approved content to platforms at scheduled times. Manual approval required.
 

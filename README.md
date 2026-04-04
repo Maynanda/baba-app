@@ -8,9 +8,10 @@ Instead of manually writing and designing posts for every platform, Baba-App act
 
 ## ✨ Features
 
-- **Trend Research Pipeline**: Automatically scrape RSS feeds, Google Trends, Reddit, and specific blogs to find what people are talking about.
-- **Unified CLI Interface**: Manage the entire pipeline using a single command-line tool `python main.py`.
-- **Database Architecture**: Manage content states from `raw` (scraped) → `draft` → `approved` → `published` entirely through localized JSON files, rather than messy spreadsheets.
+- **Streamlit Dashboard**: A beautiful local web interface to visually manage your entire content pipeline, replacing the need to use the terminal.
+- **SQLite Database Architecture**: Manage content states from `raw` (scraped) → `draft` → `approved` → `published` entirely through a fast, local SQLite database instead of messy folders of JSON files.
+- **Auto-Parser Curation Engine**: Give Baba-App *any* news portal URL, and it will mathematically deduce the CSS rules needed to extract articles from it, letting you deep-scrape headlines in bulk.
+- **Manual Content Studio**: A split-screen writing space. Read scraped reference material on the left while seamlessly filling out your visual template form on the right.
 - **Dynamic Template Engine**: Render high-quality images and PDF carousels using simple `.pptx` templates. It supports both square (1:1) and vertical (9:16) aspect ratios.
 - **Multi-Platform Visual Generation**: Generate assets optimized for all major platforms simultaneously:
   - LinkedIn (PDF Carousel)
@@ -23,12 +24,23 @@ Instead of manually writing and designing posts for every platform, Baba-App act
 
 ## 🛠️ Usage Guide
 
-Everything is controlled via the `main.py` CLI. 
+Getting started is easy. Everything can now be controlled via the visual **Streamlit Dashboard**!
 
-Make sure your virtual environment is active first:
+Make sure your virtual environment is active first, then start the server:
 ```bash
 source venv/bin/activate
+streamlit run app.py
 ```
+This will open `http://localhost:8501` in your browser.
+
+The Dashboard features 4 primary tabs:
+1. **🧭 Portal Discovery**: Add news URLs, generate custom auto-parsers, and bulk deep-scrape entire portals.
+2. **📡 Scraper Console**: One-off scraping for single URLs, Reddit Trends, Google Trends, and RSS feeds.
+3. **🗃️ Content Database**: Your SQLite database viewer. Check what raw intelligence you've gathered and update the status of your post drafts.
+4. **✍️ Content Studio**: Split-screen manual writing interface. Copy-paste from raw intel into your visual templates!
+5. **🎨 Visual Generator**: Click a button to compile your approved templates into high-res PNGs and LinkedIn PDFs.
+
+*(Note: You can still use the underlying `main.py` CLI for automation down the line)*
 
 ### 1. Trend Gathering (Scraping)
 Find interesting content to write about. Scraped items are dumped into `data/raw/` as JSON files.

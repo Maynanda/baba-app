@@ -362,3 +362,4 @@ baba-app/
 | 1.0 | Initial BRD draft |
 | 1.1 | Decisions updated: all platforms, both IG formats, both TikTok formats, manual approval, niche = AI/DS only for now |
 | 1.2 | Phase 3 completion: Updated template sizes, switched CLI from typer to argparse |
+| 1.3 | Phases 3.5–3.7 completion: Replaced flat JSON files with SQLite database. Replaced CLI with Streamlit GUI Dashboard. Added Universal Portal Auto-Parser for discovery engine. Added side-by-side Content Studio. |

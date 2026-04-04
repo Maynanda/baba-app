@@ -219,7 +219,7 @@ with tab_db:
                 for i, img_path in enumerate(local_images):
                     try:
                         with img_cols[i % 4]:
-                            st.image(img_path, use_column_width=True)
+                            st.image(img_path, use_container_width=True)
                     except Exception as e:
                         pass
             
@@ -239,6 +239,7 @@ with tab_studio:
     
     with col_ref:
         st.subheader("Reference Material")
+        from src.database import save_raw
         raw_items = get_all_raw()
         if not raw_items:
             st.info("No scraped intelligence found.")
@@ -260,12 +261,22 @@ with tab_studio:
                         cols = st.columns(2)
                         for i, img in enumerate(images[:4]):
                             try:
-                                cols[i%2].image(img, use_column_width=True)
+                                cols[i%2].image(img, use_container_width=True)
                             except:
                                 pass
                                 
                     st.write("---")
-                    st.write(raw_data.get('body', 'No body text extracted.'))
+                    edited_json_str = st.text_area("Raw Intelligence JSON (Editable)", json.dumps(raw_data, indent=2), height=400)
+                    if st.button("Update Raw Intel"):
+                        try:
+                            updated_raw_data = json.loads(edited_json_str)
+                            updated_raw_data['id'] = selected_ref['id']
+                            updated_raw_data['source'] = selected_ref['source']
+                            updated_raw_data['niche'] = selected_ref['niche']
+                            save_raw(updated_raw_data)
+                            st.success("Reference JSON successfully updated!")
+                        except json.JSONDecodeError:
+                            st.error("Invalid JSON format! Please fix your changes before updating.")
 
     with col_form:
         st.subheader("Content Builder")
@@ -282,49 +293,80 @@ with tab_studio:
         if not template_choices:
             st.warning("No complete templates found in registry.")
         else:
-            with st.form("studio_form"):
-                post_name = st.text_input("Post Name", value="my_new_post", help="Unique identifier, must have no spaces.")
-                selected_tmpl_id = st.selectbox("Select Template", list(template_choices.keys()))
-                
-                platforms = st.multiselect("Platforms", ["linkedin", "instagram_feed", "instagram_story", "tiktok"], default=["linkedin"])
-                niche = st.text_input("Niche", value="ai-engineering")
-                
-                st.divider()
-                st.write("**Slide Variables**")
-                
-                # Fetch placeholders dynamically
-                tmpl_meta = load_template_metadata(selected_tmpl_id)
-                placeholders = tmpl_meta.get("placeholders", [])
-                
-                form_data = {}
-                for ph in placeholders:
-                    # Heuristic to make body text larger than title inputs
-                    if "TITLE" in ph or "SUB" in ph:
-                        form_data[ph] = st.text_input(ph)
-                    else:
-                        form_data[ph] = st.text_area(ph, height=80)
+            import re
+            post_name_raw = st.text_input("Post Name", value="My New Post", help="Will be formatted securely for database IDs.")
+            
+            # Format post name
+            clean_name = re.sub(r'[^a-zA-Z0-9]', '_', post_name_raw).strip('_').lower()
+            post_id = f"post_{clean_name}_{datetime.now().strftime('%Y%m%d%H%M%S')}" if clean_name else f"post_untitled_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+            
+            selected_tmpl_id = st.selectbox("Select Template", list(template_choices.keys()), key="studio_template")
+            platforms = st.multiselect("Platforms", ["linkedin", "instagram_feed", "instagram_story", "tiktok"], default=["linkedin"], key="studio_platforms")
+            niche = st.text_input("Niche", value="ai-engineering", key="studio_niche")
+            
+            st.divider()
+            st.write("**Slide Variables**")
+            
+            # Fetch placeholders dynamically
+            tmpl_meta = load_template_metadata(selected_tmpl_id)
+            placeholders = tmpl_meta.get("placeholders", [])
+            
+            form_data = {}
+            for ph in placeholders:
+                # Heuristic to make body text larger than title inputs
+                if "TITLE" in ph or "SUB" in ph:
+                    form_data[ph] = st.text_input(ph)
+                else:
+                    form_data[ph] = st.text_area(ph, height=80)
+                    
+            new_post = {
+                "id": post_id,
+                "status": "draft",
+                "niche": niche,
+                "template": selected_tmpl_id,
+                "platform": platforms,
+                "post_date": "",
+                "scheduled_time": "",
+                "source_url": raw_data.get("source_url", "") if selected_ref else "",
+                "slides": [form_data]
+            }
+                    
+            st.write("")
+            col_b1, col_b2 = st.columns(2)
+            with col_b1:
+                # We use use_container_width inside standard columns
+                if st.button("Preview Visuals", icon="🖼️", use_container_width=True):
+                    with st.spinner("Rendering template preview..."):
+                        from main import _run_generator
+                        for plt in platforms:
+                            _run_generator(new_post, plt, selected_tmpl_id)
                         
-                submitted = st.form_submit_button("Save Post to Database", type="primary")
-                
-                if submitted:
-                    if not post_name.replace("_", "").isalnum():
-                        st.error("Post Name should be alphanumeric.")
-                    else:
-                        post_id = f"post_{post_name}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
-                        new_post = {
-                            "id": post_id,
-                            "status": "draft",
-                            "niche": niche,
-                            "template": selected_tmpl_id,
-                            "platform": platforms,
-                            "post_date": "",
-                            "scheduled_time": "",
-                            "source_url": selected_ref["url"] if selected_ref else "",
-                            "slides": [form_data]
-                        }
+                        st.subheader("Preview Output")
+                        from src.generator.base import export_images
+                        from config.settings import OUTPUT_PDF_DIR
                         
-                        save_post(new_post)
-                        st.success(f"Post saved as Draft! Head to the Visual Generator tab to render it.")
+                        for plt in platforms:
+                            img_dir = OUTPUT_IMG_DIR / plt / post_id
+                            
+                            # Convert LinkedIn PDF to images for preview purposes
+                            if plt == "linkedin":
+                                pdf_path = OUTPUT_PDF_DIR / f"{post_id}_linkedin.pdf"
+                                if pdf_path.exists():
+                                    export_images(pdf_path, img_dir)
+                                    
+                            if img_dir.exists():
+                                imgs = sorted(list(img_dir.glob("*.png")))
+                                if imgs:
+                                    st.write(f"**{plt.replace('_', ' ').title()}**")
+                                    prev_cols = st.columns(min(len(imgs), 4))
+                                    for idx, img_path in enumerate(imgs):
+                                        with prev_cols[idx % 4]:
+                                            st.image(str(img_path), caption=f"Slide {idx+1}")
+            
+            with col_b2:
+                if st.button("Save Post to Database", type="primary", use_container_width=True):
+                    save_post(new_post)
+                    st.success(f"Post saved as Draft! Head to the Visual Generator tab to verify.")
 
 # ─────────────────────────────────────────────────────────────
 # 🎨 TAB 4: VISUAL GENERATOR
@@ -356,14 +398,20 @@ with tab_generator:
                 st.success("Generation Complete!")
                 
                 # Preview images if they exist
+                from src.generator.base import export_images
                 for plt in platforms_to_run:
-                    if plt in ["instagram_feed", "instagram_story", "tiktok"]:
+                    img_dir = OUTPUT_IMG_DIR / plt / selected_post_id
+                    
+                    if plt == "linkedin":
+                         pdf_path = OUTPUT_PDF_DIR / f"{selected_post_id}_linkedin.pdf"
+                         if pdf_path.exists():
+                             export_images(pdf_path, img_dir)
+                             
+                    if img_dir.exists():
                         st.subheader(f"{plt.replace('_', ' ').title()} Preview")
-                        img_dir = OUTPUT_IMG_DIR / plt / selected_post_id
-                        if img_dir.exists():
-                            imgs = sorted(list(img_dir.glob("*.png")))
-                            if imgs:
-                                cols = st.columns(min(len(imgs), 5))
-                                for idx, img_path in enumerate(imgs):
-                                    with cols[idx % 5]:
-                                        st.image(str(img_path), caption=f"Slide {idx+1}")
+                        imgs = sorted(list(img_dir.glob("*.png")))
+                        if imgs:
+                            cols = st.columns(min(len(imgs), 5))
+                            for idx, img_path in enumerate(imgs):
+                                with cols[idx % 5]:
+                                    st.image(str(img_path), caption=f"Slide {idx+1}")
