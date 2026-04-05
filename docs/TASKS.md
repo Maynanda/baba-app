@@ -1,91 +1,133 @@
-# 📌 TASKS.md — Baba-App Development Tracker
-**Last Updated:** 2026-04-04 · **Reference:** [BRD.md](./BRD.md)
+# 📝 TASKS — Baba-App Development Roadmap
+**Last updated:** 2026-04-05 · **Version:** 2.1
+
+Quick legend: ✅ Done · 🔜 Next · ⏳ In Progress · ❌ Not Started
 
 ---
 
-## How to Use This File
-- `[ ]` Not started
-- `[/]` In progress
-- `[x]` Done
-- Each task is labeled with its **Module** and is independently buildable.
-- Agents and developers should update status here as they work.
+## ✅ Phase 1 — Scraping Engine
+
+- [x] `rss_scraper.py` — feedparser, saves to `raw_content` table
+- [x] `url_scraper.py` — Scrapling deep scrape with optional patchright stealth
+- [x] `trends_scraper.py` — Google Trends (pytrends) + Reddit (praw)
+- [x] `portal_scraper.py` — Portal homepage crawl → `discovered_links` table
+- [x] `config/feeds.yaml` — RSS feed configuration
+- [x] `config/portals.yaml` — Portal source configuration
 
 ---
 
-## Phase 1 — Foundation & Repository Cleanup ✅ COMPLETE
-> Goal: Establish correct folder structure, config, enhanced data schema, and CLI base.
+## ✅ Phase 2 — Database Layer
 
-## Phase 2 — Scraper Module ✅ COMPLETE
-> Goal: Automate trend discovery and raw content research yielding DB artifacts. Powered by Scrapling.
-
-## Phase 3 — Generator Refactor ✅ COMPLETE
-> Goal: Multi-platform visual generation. User picks platform + template at generation time.
-
-## Phase 3.5 - 3.10 — Streamlit Integrations ❌ DEPRECATED
-> Goal: Legacy Streamlit phases. The features built here (Scrapling, Auto-Parsers, SQLite, Stealth Checkboxes) are **migrated**, but the Streamlit UI components are **deprecated** in favor of Phase 5.
+- [x] `src/database.py` — SQLite helpers, all CRUD for all tables
+- [x] `raw_content` table — scraped articles
+- [x] `posts` table — content pipeline (draft → approved → published)
+- [x] `discovered_links` table — portal-found URLs queue
+- [x] `seen_urls` table — URL deduplication
 
 ---
 
-## Phase 4 — REST API Integration (FastAPI)
-> Goal: Wrap all legacy backend features into a centralized HTTP API to be consumable by independent frontend apps.
+## ✅ Phase 3 — Visual Generator
 
-### `main_api.py` Core
-- [x] Integrate FastAPI, Uvicorn, CORS Middleware.
-- [x] Refactored to router-only entry point — all logic in `api/routers/`
-
-### `api/routers/data.py` — Data endpoints
-- [x] `GET /api/data/raw` — all raw scraped items
-- [x] `GET /api/data/content` — all content pipeline posts
-- [x] `GET /api/data/discovered` — all portal-discovered links
-- [x] `DELETE /api/data/raw/{id}` — delete a raw item
-- [x] `DELETE /api/data/content/{id}` — delete a post
-
-### `api/routers/scraper.py` — Scraper trigger endpoints
-- [x] `POST /api/scrape/rss` — trigger RSS feed scraping (background)
-- [x] `POST /api/scrape/url` — deep scrape a single URL (background)
-- [x] `POST /api/scrape/trends` — Google Trends + Reddit (background)
-- [x] `POST /api/scrape/discovery` — portal discovery engine (background)
-- [x] `POST /api/scrape/portal` — auto-generate portal config (sync)
-
-### Remaining
-- [x] `api/routers/generator.py` — trigger PPTX → PDF generation & serve images
-- [x] `POST /api/data/content` — save new posts from Content Studio
+- [x] `src/generator/base.py` — PPTX fill + LibreOffice PDF export + PNG conversion
+- [x] `src/generator/linkedin.py` — LinkedIn PDF carousel
+- [x] `src/generator/instagram.py` — Feed (1:1) and Story (9:16) PNGs
+- [x] Template registry schema (`templates/registry.json`)
+- [x] Template JSON schema (`template.json` per template folder)
+- [x] `carousel_dark_1x1` reference template
 
 ---
 
-## Phase 5 — React UI Implementation
-> Goal: Completely decouple user presentation, using Vite, React, Ant Design, and Axios to talk to the Backend API.
+## ✅ Phase 4 — FastAPI Backend
+
+- [x] `main_api.py` — FastAPI entry point, mounts all routers
+- [x] `api/routers/data.py` — GET/DELETE raw, GET/POST/DELETE content, GET discovered
+- [x] `api/routers/scraper.py` — POST rss, url, trends, discovery, portal
+- [x] `api/routers/generator.py` — GET templates, GET template/{id}, POST generate, GET outputs, GET image
+- [x] CORS middleware configured for React dev server
+- [x] BackgroundTasks for all scraping and generation jobs
+
+---
+
+## ✅ Phase 5 — React Frontend
 
 ### Foundation
-- [x] Initial Vite + React + TS App Scaffold (`frontend/`)
-- [x] Install Dependencies (`antd`, `react-router-dom`, `axios`)
-- [x] General App Layout Component — Sidebar, Header, Footer, Router
-- [x] `src/types/index.ts` — TypeScript interfaces for all DB records and API responses
-- [x] `src/api/client.ts` — Centralized Axios instance (base URL config)
-- [x] `src/api/dataService.ts` — Pure functions for all data endpoints
-- [x] `src/api/scraperService.ts` — Pure functions for all scraper endpoints
-- [x] `src/api/generatorService.ts` — Pure functions for template listing, generation, image serving
+- [x] Vite + React + TypeScript scaffold (`frontend/`)
+- [x] Ant Design, Axios, React Router installed
+- [x] `src/App.tsx` — horizontal top-nav header layout
+- [x] `src/types/index.ts` — TypeScript interfaces for all DB records
+- [x] `src/api/client.ts` — Axios base client (`http://localhost:8000/api`)
+- [x] `src/api/dataService.ts` — fetchRawData, fetchContentData, fetchDiscoveredLinks, deleteRaw, deletePost
+- [x] `src/api/scraperService.ts` — runRss, runUrl, runTrends, runDiscovery, addPortal
+- [x] `src/api/generatorService.ts` — fetchTemplates, fetchTemplate, triggerGenerate, fetchOutputs, getImageUrl
 
-### Pages & Components
-- [x] `ScraperConsole.tsx` — 5 independent scraper cards (RSS, URL, Trends, Discovery, Add Portal)
-- [x] `DataManagement.tsx` — 3 tabs: Raw Content, Content Pipeline, Discovered Links
-- [x] `RawDataTable.tsx` — Isolated Ant Design table component with Inspect + Delete
-- [x] `VisualGenerator.tsx` — Template + platform selectors, generate button, live image grid
-- [x] `ContentStudio.tsx` — Split-screen: raw source inspector + dynamic template form + save to pipeline
+### Pages
+- [x] `ScraperConsole.tsx` — 5 independent scraper cards, background jobs
+- [x] `DataManagement.tsx` — 3 tabs, lazy loading, Inspect + Delete
+- [x] `ContentStudio.tsx` — 3-panel live studio (source + editor + preview)
+- [x] `VisualGenerator.tsx` — post picker, template/platform selectors, auto-refresh gallery
+
+### Content Studio features
+- [x] Collapsible Source panel and Preview panel
+- [x] Full article inspector (title, author, date, keywords, body — all copyable)
+- [x] Slide chip navigation (Hook, Body 1–3, CTA)
+- [x] Dynamic form fields from `template.json` placeholders
+- [x] Live preview on every keystroke (no button)
+- [x] Click slide in preview → navigates editor to that slide
+- [x] Content Name field
+- [x] Platform multi-select
+- [x] Save to `/api/data/content` (fixed: `async Request.json()`)
+
+### Visual Generator features
+- [x] Post detail card (name, slides, status, platforms)
+- [x] Independent template + platform selection (re-generate freely)
+- [x] Auto-poll after generation (~8s and ~20s)
+- [x] Images grouped by platform in gallery
+- [x] Alert when no posts saved yet
 
 ---
 
-## Phase 6 — Publisher & Scheduler
-> Goal: Post approved content to platforms at scheduled times. Manual approval required.
-*(See previous iterations for granular platform-specific tasks. Paused pending UI integration)*
+## 🔜 Phase 6 — Publisher: LinkedIn
 
-## Phase 7 — AI Agent
-> Goal: Autonomous pipeline. Research → Write → Generate → Schedule. Minimal human input.
-*(Paused pending UI integration)*
+- [ ] LinkedIn OAuth 2.0 flow
+- [ ] `publisher/linkedin.py` — post PDF carousel via LinkedIn API
+- [ ] `POST /api/publish/linkedin` endpoint
+- [ ] "Publish" button on post detail in Data Management
+- [ ] Post status update: draft → published
 
 ---
 
-## Notes for Future Agents
-- **STRICT ARCHITECTURE:** The Frontend and Backend are decoupled. NEVER write Python logic into the Frontend, and NEVER write UI templating logic into the Python Backend.
-- BRD is in `docs/BRD.md` — read this first before making any structural changes.
-- Ensure API error handling is passed gracefully to the user via Ant Design `message` or `notification`.
+## 🔜 Phase 7 — Publisher: Instagram & TikTok
+
+- [ ] Instagram Graph API integration
+- [ ] TikTok API integration
+- [ ] Batch publish (multiple platforms at once)
+
+---
+
+## 🔜 Phase 8 — Scheduler
+
+- [ ] APScheduler integration into FastAPI startup
+- [ ] `POST /api/schedule` — schedule a post for a future time
+- [ ] Calendar/queue view in Data Management
+
+---
+
+## ❌ Phase 9 — AI Agent
+
+- [ ] `agent/` module — LLM-powered auto-draft
+- [ ] Input: raw article → Output: filled slides JSON
+- [ ] Template selection heuristic (niche → best template)
+- [ ] Human-in-the-loop review step before save
+- [ ] `POST /api/agent/draft` endpoint
+
+---
+
+## 🐛 Known Issues & Tech Debt
+
+| Item | Priority | Notes |
+|------|----------|-------|
+| `tiktok` generator module may not exist | Medium | `src/generator/tiktok.py` not confirmed |
+| `instagram.py` generate_story/generate_feed — verify function signatures | Medium | Need to match generator router calls |
+| Large bundle size warning (~1.1MB) | Low | Consider code splitting in Vite config |
+| No authentication on any API endpoint | Low | Local machine only for now |
+| Antd `bodyStyle` deprecation warnings | Low | Cosmetic, no functional impact |

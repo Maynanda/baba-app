@@ -461,8 +461,34 @@ const SlideEditor: React.FC<{
           })}
       </div>
 
-      {/* Actions */}
+      {/* Save metadata + actions */}
       <div style={{ flexShrink: 0, paddingTop: 12, borderTop: '1px solid #e5e7eb', marginTop: 4 }}>
+        <Form.Item
+          name="__content_name"
+          label={<Text style={{ fontSize: 12 }}>Content Name <Text type="secondary" style={{ fontSize: 11 }}>(for your reference)</Text></Text>}
+          rules={[{ required: true, message: 'Give this post a name' }]}
+        >
+          <Input placeholder="e.g. AI Agents 101 – Hook + 3 bodies" maxLength={100} />
+        </Form.Item>
+
+        <Form.Item
+          name="__platforms"
+          label={<Text style={{ fontSize: 12 }}>Publish to Platforms</Text>}
+          initialValue={templateDetail?.platforms ?? ['linkedin']}
+        >
+          <Select
+            mode="multiple"
+            placeholder="Select platforms…"
+            style={{ width: '100%' }}
+            options={[
+              { label: '💼 LinkedIn', value: 'linkedin' },
+              { label: '📸 Instagram Feed', value: 'instagram_feed' },
+              { label: '📱 Instagram Story', value: 'instagram_story' },
+              { label: '🎵 TikTok', value: 'tiktok' },
+            ]}
+          />
+        </Form.Item>
+
         <Button
           type="primary"
           icon={<SaveOutlined />}
@@ -523,25 +549,31 @@ const ContentStudio: React.FC = () => {
   }, [selectedTemplate]);
 
   // Save post to pipeline
-  const handleSave = useCallback(async (values: Record<string, string>) => {
+  const handleSave = useCallback(async (values: Record<string, any>) => {
     if (!templateDetail) return;
     setSaving(true);
     try {
+      // Extract metadata fields (prefixed with __) from slide content fields
+      const contentName  = values['__content_name'] ?? '';
+      const platforms    = values['__platforms'] ?? templateDetail.platforms ?? [];
+
+      // Build slide data — only include real placeholder keys
       const slides = templateDetail.slides?.map(slide => {
         const entry: Record<string, string> = { type: slide.type };
         templateDetail.placeholders?.forEach(ph => {
           if (values[ph]) entry[ph] = values[ph];
         });
         return entry;
-      }) ?? [values];
+      }) ?? [];
 
       const postId = `post_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
       const payload = {
         id: postId,
+        content_name: contentName,
         status: 'draft',
         niche: selectedRaw?.niche ?? 'ai-engineering',
         template: templateDetail.id,
-        platform: templateDetail.platforms ?? [],
+        platform: platforms,
         source_url: selectedRaw ? (parseJson(selectedRaw.data_json).source_url ?? '') : '',
         raw_ref_id: selectedRaw?.id ?? null,
         slides,
