@@ -15,6 +15,8 @@ import { DeleteOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import type { RawContent } from '../types';
 
+import { getRawImageUrl } from '../api/dataService';
+
 const { Paragraph, Text } = Typography;
 
 interface Props {
@@ -92,6 +94,9 @@ const RawDataTable: React.FC<Props> = ({ data, loading, onDelete }) => {
     },
   ];
 
+  const parsed = inspectItem ? JSON.parse(inspectItem.data_json) : null;
+  const localImages = parsed?.local_images ?? [];
+
   return (
     <>
       <Table<RawContent>
@@ -112,14 +117,48 @@ const RawDataTable: React.FC<Props> = ({ data, loading, onDelete }) => {
         width={720}
       >
         {inspectItem && (
-          <>
-            <Text type="secondary">ID: {inspectItem.id}</Text>
-            <Paragraph style={{ marginTop: 12 }}>
-              <pre style={{ whiteSpace: 'pre-wrap', fontSize: 12, maxHeight: 480, overflow: 'auto' }}>
-                {JSON.stringify(JSON.parse(inspectItem.data_json), null, 2)}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <Text type="secondary" style={{ fontSize: 11 }}>ID: {inspectItem.id}</Text>
+
+            {/* Images Gallery */}
+            {localImages.length > 0 && (
+              <div style={{ 
+                display: 'flex', 
+                gap: 12, 
+                overflowX: 'auto', 
+                paddingBottom: 12,
+                marginTop: 8 
+              }}>
+                {localImages.map((img: string, idx: number) => (
+                  <div key={idx} style={{ flexShrink: 0, borderRadius: 8, overflow: 'hidden', border: '1px solid #eee' }}>
+                    <img 
+                      src={getRawImageUrl(inspectItem.id, img)} 
+                      alt={`Scraped ${idx}`}
+                      style={{ height: 160, objectFit: 'cover', display: 'block' }}
+                      onError={(e) => {
+                        (e.target as any).style.display = 'none';
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <Paragraph>
+              <pre style={{ 
+                whiteSpace: 'pre-wrap', 
+                fontSize: 12, 
+                maxHeight: 480, 
+                overflow: 'auto',
+                background: '#f8fafc',
+                padding: 12,
+                borderRadius: 6,
+                border: '1px solid #e2e8f0'
+              }}>
+                {JSON.stringify(parsed, null, 2)}
               </pre>
             </Paragraph>
-          </>
+          </div>
         )}
       </Modal>
     </>

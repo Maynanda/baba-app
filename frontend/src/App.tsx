@@ -19,7 +19,7 @@ import {
 import { Layout, Menu, Typography, Space } from 'antd';
 import {
   DatabaseOutlined, CloudSyncOutlined,
-  FormatPainterOutlined, EditOutlined, RobotOutlined, BookOutlined,
+  FormatPainterOutlined, EditOutlined, RobotOutlined, BookOutlined, SendOutlined,
 } from '@ant-design/icons';
 
 // ── Page imports ──────────────────────────────────────────────────────────────
@@ -27,6 +27,7 @@ import DataManagement  from './pages/DataManagement';
 import ScraperConsole  from './pages/ScraperConsole';
 import VisualGenerator from './pages/VisualGenerator';
 import ContentStudio   from './pages/ContentStudio';
+import PublisherAssistant from './pages/PublisherAssistant';
 import Walkthrough     from './pages/Walkthrough';
 
 const { Header, Content } = Layout;
@@ -46,14 +47,19 @@ const navItems = [
     label: <Link to="/data">Data</Link>,
   },
   {
+    key: 'studio',
+    icon: <EditOutlined />,
+    label: <Link to="/studio">Studio</Link>,
+  },
+  {
     key: 'generator',
     icon: <FormatPainterOutlined />,
     label: <Link to="/generator">Generator</Link>,
   },
   {
-    key: 'studio',
-    icon: <EditOutlined />,
-    label: <Link to="/studio">Content Studio</Link>,
+    key: 'publisher',
+    icon: <SendOutlined />,
+    label: <Link to="/publisher">Publisher</Link>,
   },
   {
     key: 'guide',
@@ -119,6 +125,7 @@ const AppLayout: React.FC = () => {
           <Route path="/data"      element={<DataManagement />} />
           <Route path="/generator" element={<VisualGenerator />} />
           <Route path="/studio"    element={<ContentStudio />} />
+          <Route path="/publisher" element={<PublisherAssistant />} />
           <Route path="/guide"     element={<Walkthrough />} />
         </Routes>
       </Content>

@@ -39,3 +39,11 @@ export const deleteRawItem = async (id: string): Promise<void> => {
 export const deletePost = async (id: string): Promise<void> => {
   await apiClient.delete(`/data/content/${id}`);
 };
+
+/** Build the URL for a raw scraped image */
+export const getRawImageUrl = (rawId: string, filename: string): string => {
+  if (!rawId || !filename) return '';
+  // filename might be an absolute path from the scraper, just get the basename
+  const basename = filename.split(/[/\\]/).pop() || '';
+  return `${apiClient.defaults.baseURL}/data/image/${rawId}/${basename}`;
+};

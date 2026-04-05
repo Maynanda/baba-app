@@ -29,7 +29,9 @@ import {
   LeftOutlined, RightOutlined,
 } from '@ant-design/icons';
 import apiClient from '../api/client';
-import { fetchRawData } from '../api/dataService';
+import {
+  fetchRawData, getRawImageUrl,
+} from '../api/dataService';
 import {
   fetchTemplates, fetchTemplate,
   type Template, type TemplateDetail,
@@ -90,6 +92,7 @@ const SourceBrowser: React.FC<{
     i.source.toLowerCase().includes(search.toLowerCase()),
   );
   const parsed = selected ? parseJson(selected.data_json) : null;
+  const localImages = parsed?.local_images ?? [];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8, height: '100%' }}>
@@ -187,6 +190,34 @@ const SourceBrowser: React.FC<{
             </div>
           )}
 
+          {/* Scraped Images Gallery */}
+          {localImages.length > 0 && (
+            <div style={{ marginTop: 12 }}>
+              <Text type="secondary" style={{ fontSize: 10, display: 'block', marginBottom: 6 }}>
+                Scraped Images
+              </Text>
+              <div style={{ 
+                display: 'flex', 
+                gap: 8, 
+                overflowX: 'auto', 
+                paddingBottom: 8 
+              }}>
+                {localImages.map((img: string, idx: number) => (
+                  <div key={idx} style={{ flexShrink: 0, borderRadius: 6, overflow: 'hidden', border: '1px solid #eee' }}>
+                    <img 
+                      src={getRawImageUrl(selected.id, img)} 
+                      alt={`Scraped ${idx}`}
+                      style={{ height: 100, width: 100, objectFit: 'cover', display: 'block' }}
+                      onError={(e) => {
+                        (e.target as any).parentElement.style.display = 'none';
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <Divider style={{ margin: '8px 0' }} />
 
           {/* Body */}
@@ -229,7 +260,7 @@ const SourceBrowser: React.FC<{
             </>
           )}
         </div>
-      ) : !loading && items.length > 0 && (
+      ) : !loading && items.length > 0 ? (
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           border: '1px dashed #d1d5db', borderRadius: 6, color: '#9ca3af',
@@ -237,7 +268,7 @@ const SourceBrowser: React.FC<{
         }}>
           ↑ Click an article to inspect
         </div>
-      )}
+      ) : null}
     </div>
   );
 };

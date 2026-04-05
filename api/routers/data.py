@@ -14,7 +14,9 @@ Endpoints:
 """
 
 from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import FileResponse
 import src.database as db
+from config.settings import DATA_RAW_DIR
 
 router = APIRouter()
 
@@ -26,6 +28,15 @@ def get_raw_data():
         return {"data": db.get_all_raw()}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/image/{raw_id}/{filename}")
+def serve_raw_image(raw_id: str, filename: str):
+    """Serve a raw scraped image from the data/raw/images directory."""
+    img_path = DATA_RAW_DIR / "images" / raw_id / filename
+    if not img_path.exists():
+        raise HTTPException(status_code=404, detail="Image not found")
+    return FileResponse(img_path)
 
 
 @router.get("/content")
