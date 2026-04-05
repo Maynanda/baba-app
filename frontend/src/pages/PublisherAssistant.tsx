@@ -24,10 +24,12 @@ import {
   GlobalOutlined,
   InstagramOutlined,
   LinkedinOutlined,
-  SelectOutlined
+  SelectOutlined,
+  PlayCircleOutlined
 } from '@ant-design/icons';
 import { fetchContentData } from '../api/dataService';
 import { fetchOutputs, getImageUrl, type OutputImage } from '../api/generatorService';
+import { pushToAssistant } from '../api/publisherService';
 import type { Post } from '../types';
 
 const { Title, Text, Paragraph } = Typography;
@@ -72,10 +74,17 @@ const PublisherAssistant: React.FC = () => {
     message.success('Caption copied to clipboard!');
   };
 
-  const startManualPost = (platform: string) => {
-    message.info(`🚀 Starting Desktop Assistant for ${platform}...`);
-    // Phase 10 implementation: This will eventually call a backend script
-    // that opens Playwright in a persistent browser context.
+  const startManualPost = async (platform: string) => {
+    if (!selectedPost) return;
+    const hide = message.loading(`🚀 Launching Desktop Assistant for ${platform}...`, 0);
+    try {
+      const res = await pushToAssistant(platform, selectedPost.id);
+      message.success(res.message, 6);
+    } catch (err: any) {
+      message.error(`Failed to launch assistant: ${err.message}`);
+    } finally {
+      hide();
+    }
   };
 
   // Group images by platform

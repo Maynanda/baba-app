@@ -1,5 +1,5 @@
 # 📋 BRD — Baba-App: Automated Content Creation Platform
-**Version:** 2.2 · **Date:** 2026-04-05 · **Status:** Active Development
+**Version:** 2.5 · **Date:** 2026-04-05 · **Status:** Active Development
 
 ---
 
@@ -31,8 +31,8 @@ Runs entirely on a local machine. Built on a fully decoupled architecture: a Fas
 | G3 | Produce platform-ready visual assets per platform per template | ✅ Done |
 | G4 | Schedule & post to LinkedIn / TikTok / Instagram | ⏳ In Progress |
 | G5 | Reusable PPTX template library (niche + platform selectable) | ✅ Done |
-| G6 | AI agent for autonomous drafting (Slides + Captions) | ⏳ In Progress |
-| G7 | Desktop Publishing Assistant (Playwright-driven manual bridge) | 🔜 Next |
+| G6 | AI agent for autonomous drafting (Slides + Captions) | ✅ Done |
+| G7 | Desktop Publishing Assistant (Playwright-driven manual bridge) | ⏳ In Progress |
 
 ---
 
@@ -64,7 +64,9 @@ Runs entirely on a local machine. Built on a fully decoupled architecture: a Fas
 | **Scraper Console** | RSS, Single URL (with Stealth Mode), Google/Reddit Trends, Portal Discovery, Add Portal |
 | **Data Management** | Raw Content table, Content Pipeline table, Discovered Links table |
 | **Content Studio** | 3-panel live studio: Source Inspector + Slide Editor + Live Preview |
+| **AI Magic Draft** | One-click carousel drafting via Google Gemini 1.5 Flash |
 | **Visual Generator** | Post picker + Template/Platform selectors + auto-refresh gallery (Fixed) |
+| **Desktop Publisher** | Playwright-powered background posting (LinkedIn Beta) |
 | **FastAPI Backend** | `/api/data/`, `/api/scrape/`, `/api/generator/` routers fully wired |
 | **React Frontend** | 4-page app with top-nav, modular service layer, TypeScript types |
 
@@ -72,7 +74,6 @@ Runs entirely on a local machine. Built on a fully decoupled architecture: a Fas
 
 | Feature | Phase |
 |---------|-------|
-| AI Auto-Draft Agent (Brain) | Phase 9 |
 | Desktop Automation Publisher (Hand) | Phase 10 |
 | LinkedIn/Instagram/TikTok Direct API | Phase 6-7 |
 | Scheduler (APScheduler) | Phase 8 |
@@ -89,6 +90,8 @@ baba-app/
 │       ├── data.py          ← /api/data/*
 │       ├── scraper.py       ← /api/scrape/*
 │       └── generator.py     ← /api/generator/*
+├── scripts/
+│   └── desktop_publisher.py ← Playwright automation engine
 ├── scraper/                 ← Scrapling + feedparser scraping engines
 ├── src/
 │   ├── database.py          ← SQLite read/write helpers

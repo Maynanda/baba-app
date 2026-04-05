@@ -23,26 +23,33 @@ Quick legend: ✅ Done · 🔜 Next · ⏳ In Progress · ❌ Not Started
 
 ---
 
-## ⏳ Phase 9 — AI Agent (Brain)
-- [ ] `agent/generator.py` — LLM drafting logic
-- [ ] Prompt engineering for Carousel Slides + Social Caption
-- [ ] `POST /api/agent/draft` endpoint
-- [ ] "✨ AI Draft" button in Content Studio
+### Phase 9: AI Content Agent [DONE]
+- [x] Create AI Drafting engine using Google Gemini.
+- [x] Implement `/api/agent/draft` endpoint.
+- [x] Add "Magic AI Draft" button to Content Studio.
+- [x] Support automatic social caption generation.
 
----
+### Phase 10: Desktop Publisher Assistant [BETA]
+- [x] Create Publisher Assistant UI matching the premium theme.
+- [x] Implement `/api/publisher/push` background worker.
+- [/] Implement Playwright automation for LinkedIn Document posts.
+- [ ] Implement Playwright automation for Instagram Feed/Reels.
+- [ ] Implement Playwright automation for TikTok.
+- [ ] Add persistent `.chrome_profile` for session management.
 
-## 🔜 Phase 10 — Desktop Automation (Hand)
-- [ ] `scripts/desktop_publisher.py` — Playwright headless/non-headless bridge
-- [ ] Automated file upload (LinkedIn/Insta/TikTok)
-- [ ] Automated caption pasting
-- [ ] Post status workflow (Ready → Publishing → Published)
+### Phase 11: Template Expansion (Visual Library) [PLANNED]
+- [ ] **Research:** Identify high-engagement typography (Inter, Outfit, Roboto) for AI niche.
+- [ ] **Design:** Create `T-LIGHT-01` (Minimalist White, 1 Image/Slide).
+- [ ] **Design:** Create `T-PLAYBOOK-01` (5-step process layout with progress bars).
+- [ ] **Design:** Create `T-COMPARE-01` (Split-screen Comparison: Old vs. AI way).
+- [ ] **Refine:** Update `registry.json` to categorize templates by "Style" (Dark, Light, Retro).
 
----
-
-## 🔜 Phase 6–7–8 — APIs & Scheduling
-- [ ] LinkedIn API
-- [ ] Instagram / TikTok API
-- [ ] APScheduler Integration
+### Phase 6-8: Direct API Publisher (Future)
+- [ ] LinkedIn API v2 (Direct Post)
+- [ ] Instagram Graph API
+- [ ] TikTok Content Posting API
+- [ ] YouTube Shorts API (Researching)
+- [ ] APScheduler for automated posting windows (e.g., 9AM Tuesday).
 
 ---
 
