@@ -109,12 +109,25 @@ def generate_visuals(body: GenerateRequest, background_tasks: BackgroundTasks):
 def list_outputs(post_id: str):
     """
     List all generated PNG images for a given post_id.
-    Scans output/images/ subdirectories recursively for this post's files.
-    Returns a list of relative paths that can be passed to /api/generator/image/{path}.
+
+    Scans two directory patterns:
+      1. NEW:    output/images/{platform}/{post_id}/*.png   (current standard)
+      2. LEGACY: output/images/{post_id}/*.png              (old flat structure)
+
+    Returns a list of {platform, filename, path} objects.
+    The `path` value is passed directly to GET /api/generator/image/{path}.
     """
     results = []
+
+    # Known platform folder names (new structure)
+    KNOWN_PLATFORMS = {"linkedin", "instagram_feed", "instagram_story", "tiktok"}
+
     for subdir in OUTPUT_IMG_DIR.iterdir():
-        if subdir.is_dir():
+        if not subdir.is_dir():
+            continue
+
+        if subdir.name in KNOWN_PLATFORMS:
+            # NEW structure: output/images/{platform}/{post_id}/
             post_dir = subdir / post_id
             if post_dir.exists():
                 for img in sorted(post_dir.glob("*.png")):
@@ -124,13 +137,32 @@ def list_outputs(post_id: str):
                         "filename": img.name,
                         "path": rel,
                     })
+        elif subdir.name == post_id:
+            # LEGACY structure: output/images/{post_id}/ (no platform subfolder)
+            for img in sorted(subdir.glob("*.png")):
+                rel = f"{post_id}/{img.name}"
+                results.append({
+                    "platform": "generated",
+                    "filename": img.name,
+                    "path": rel,
+                })
+
     return {"data": results, "count": len(results)}
 
 
 @router.get("/image/{platform}/{post_id}/{filename}")
 def serve_image(platform: str, post_id: str, filename: str):
-    """Serve a generated PNG image file directly."""
+    """Serve a generated PNG image file directly (new structure: platform/post_id/file)."""
     img_path = OUTPUT_IMG_DIR / platform / post_id / filename
+    if not img_path.exists():
+        raise HTTPException(status_code=404, detail="Image not found")
+    return FileResponse(str(img_path), media_type="image/png")
+
+
+@router.get("/image/{post_id}/{filename}")
+def serve_image_legacy(post_id: str, filename: str):
+    """Serve a PNG image from the legacy flat structure (post_id/file, no platform subfolder)."""
+    img_path = OUTPUT_IMG_DIR / post_id / filename
     if not img_path.exists():
         raise HTTPException(status_code=404, detail="Image not found")
     return FileResponse(str(img_path), media_type="image/png")

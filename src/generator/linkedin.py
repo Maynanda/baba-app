@@ -1,11 +1,11 @@
 """
 src/generator/linkedin.py
 Generator for LinkedIn platform.
-Generates 1:1 format PDF doc for carousels.
+Generates 1:1 format PDF doc for carousels AND PNG slides for the image gallery.
 """
 from pathlib import Path
-from src.generator.base import load_template_metadata, fill_placeholders, export_pdf, BASE_DIR
-from config.settings import OUTPUT_PPTX_DIR, OUTPUT_PDF_DIR
+from src.generator.base import load_template_metadata, fill_placeholders, export_pdf, export_images, BASE_DIR
+from config.settings import OUTPUT_PPTX_DIR, OUTPUT_PDF_DIR, OUTPUT_IMG_DIR
 
 def generate(content: dict, template_id: str):
     print(f"  [linkedin] Starting visual generation for {content['id']}")
@@ -21,5 +21,10 @@ def generate(content: dict, template_id: str):
     print("  [linkedin] Converting format to PDF...")
     pdf_path = export_pdf(pptx_out, OUTPUT_PDF_DIR)
     
-    print(f"  [linkedin] Successfully generated LinkedIn PDF: {pdf_path}")
-    return pdf_path
+    print("  [linkedin] Rendering PNG slides...")
+    img_dir = OUTPUT_IMG_DIR / "linkedin" / post_id
+    img_paths = export_images(pdf_path, img_dir)
+    
+    print(f"  [linkedin] Generated {len(img_paths)} images in {img_dir}")
+    print(f"  [linkedin] PDF also saved: {pdf_path}")
+    return img_paths
