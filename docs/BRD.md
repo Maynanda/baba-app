@@ -1,5 +1,5 @@
 # 📋 BRD — Baba-App: Automated Content Creation Platform
-**Version:** 2.1 · **Date:** 2026-04-05 · **Status:** Active Development
+**Version:** 2.2 · **Date:** 2026-04-05 · **Status:** Active Development
 
 ---
 
@@ -7,7 +7,7 @@
 
 **Baba-App** is a local, Python + React content automation platform for a personal brand in the **AI Engineering & Data Science** niche. The system automates the full content lifecycle:
 
-> **Trend Research & Scraping → Content Writing (Live Studio) → Visual Generation → Scheduling & Publishing**
+> **Trend Research & Scraping → Content Writing (Live Studio/AI Agent) → Visual Generation → Desktop/API Publishing**
 
 Runs entirely on a local machine. Built on a fully decoupled architecture: a FastAPI Python backend communicating with a React/Vite frontend via a typed REST API. No Streamlit.
 
@@ -29,10 +29,10 @@ Runs entirely on a local machine. Built on a fully decoupled architecture: a Fas
 | G1 | Automate trend discovery & research | ✅ Done |
 | G2 | Live content writing studio (split-screen, template-driven) | ✅ Done |
 | G3 | Produce platform-ready visual assets per platform per template | ✅ Done |
-| G4 | Schedule & post to LinkedIn / TikTok / Instagram | 🔜 Next |
+| G4 | Schedule & post to LinkedIn / TikTok / Instagram | ⏳ In Progress |
 | G5 | Reusable PPTX template library (niche + platform selectable) | ✅ Done |
-| G6 | AI agent for autonomous drafting | 🔜 Planned |
-| G7 | Decoupled Architecture: Python API ↔ React UI via REST only | ✅ Done |
+| G6 | AI agent for autonomous drafting (Slides + Captions) | ⏳ In Progress |
+| G7 | Desktop Publishing Assistant (Playwright-driven manual bridge) | 🔜 Next |
 
 ---
 
@@ -64,7 +64,7 @@ Runs entirely on a local machine. Built on a fully decoupled architecture: a Fas
 | **Scraper Console** | RSS, Single URL (with Stealth Mode), Google/Reddit Trends, Portal Discovery, Add Portal |
 | **Data Management** | Raw Content table, Content Pipeline table, Discovered Links table |
 | **Content Studio** | 3-panel live studio: Source Inspector + Slide Editor + Live Preview |
-| **Visual Generator** | Post picker + Template/Platform selectors + auto-refresh image gallery |
+| **Visual Generator** | Post picker + Template/Platform selectors + auto-refresh gallery (Fixed) |
 | **FastAPI Backend** | `/api/data/`, `/api/scrape/`, `/api/generator/` routers fully wired |
 | **React Frontend** | 4-page app with top-nav, modular service layer, TypeScript types |
 
@@ -72,15 +72,14 @@ Runs entirely on a local machine. Built on a fully decoupled architecture: a Fas
 
 | Feature | Phase |
 |---------|-------|
-| LinkedIn Publisher API | Phase 6 |
-| Instagram / TikTok API | Phase 7 |
+| AI Auto-Draft Agent (Brain) | Phase 9 |
+| Desktop Automation Publisher (Hand) | Phase 10 |
+| LinkedIn/Instagram/TikTok Direct API | Phase 6-7 |
 | Scheduler (APScheduler) | Phase 8 |
-| AI Auto-Draft Agent | Phase 9 |
-| Post status flow (draft → approved → published) UI | Phase 6 |
 
 ---
 
-## 6. System Architecture
+## 6. System Architecture (Extended)
 
 ```
 baba-app/

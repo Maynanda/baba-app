@@ -18,7 +18,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
 # ── Router imports ─────────────────────────────────────────────────────────────
-from api.routers import data, scraper, generator
+from api.routers import data, scraper, generator, agent
 
 app = FastAPI(
     title="Baba-App API",
@@ -40,6 +40,7 @@ app.add_middleware(
 app.include_router(data.router,      prefix="/api/data",      tags=["Data"])
 app.include_router(scraper.router,   prefix="/api/scrape",    tags=["Scraper"])
 app.include_router(generator.router, prefix="/api/generator", tags=["Generator"])
+app.include_router(agent.router,     prefix="/api/agent",     tags=["Agent"])
 
 @app.get("/", tags=["Health"])
 def health_check():

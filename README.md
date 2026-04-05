@@ -117,18 +117,22 @@ Three tabs:
 #### How to use
 
 1. **Select a Post** — picks from your Content Pipeline. Shows the post's name, slides, status, and platforms.
-2. **Select a Template** — choose any installed PPTX template (can be different from what was originally planned).
+2. **Select a Template** — choose any installed PPTX template.
 3. **Select a Platform** — LinkedIn, Instagram Feed, Instagram Story, or TikTok.
 4. **Click Generate** — fires a background job. Page **auto-refreshes in ~8 seconds**.
 5. **Images appear** grouped by platform below the controls.
 
-> 🔁 **You can re-generate the same post** with a different template or platform any time. Each run adds new images to the gallery without overwriting the others.
+> 🔁 **You can re-generate the same post** with different templates. Each run adds new images to the gallery. (Fixed: Now correctly serves images via API).
 
-#### Output files
-Generated images are saved to:
-```
-output/images/{platform}/{post_id}/*.png
-```
+---
+
+### 🤖 Page 5 — AI Agent (New)
+
+**What it does:** Automatically draft carousels from raw articles.
+
+1. Pick a raw article in Content Studio.
+2. Click **AI Draft**.
+3. AI generates the Hook, 3 Body slides, CTA, and a **Social Media Caption**.
 
 ---
 
@@ -136,16 +140,21 @@ output/images/{platform}/{post_id}/*.png
 
 ```
 baba-app/
-├── main_api.py              ← FastAPI entry point (run this with uvicorn)
+├── main_api.py              ← FastAPI entry point
+├── agent/                   ← AI Drafting (LLM Orchestrator)
+├── publisher/               ← Platform Publishing (API + Automation)
 ├── api/
 │   └── routers/
-│       ├── data.py          ← GET/POST /api/data/raw|content|discovered
-│       ├── scraper.py       ← POST /api/scrape/rss|url|trends|discovery|portal
-│       └── generator.py     ← GET/POST /api/generator/templates|generate|outputs
+│       ├── data.py          ← /api/data/*
+│       ├── scraper.py       ← /api/scrape/*
+│       ├── generator.py     ← /api/generator/*
+│       └── agent.py         ← /api/agent/* (New)
 ├── scraper/                 ← Web scraping engines (Scrapling + feedparser)
 ├── src/
-│   ├── database.py          ← SQLite helpers (raw_content, posts, discovered_links)
+│   ├── database.py          ← SQLite helpers (Extended for captions)
 │   └── generator/           ← PPTX → PDF → PNG per platform
+├── scripts/
+│   └── desktop_publisher.py ← Multi-platform automation bridge
 ├── templates/               ← PPTX template files + registry.json
 ├── config/                  ← feeds.yaml, portals.yaml, .env
 ├── data/                    ← baba_app.sqlite lives here

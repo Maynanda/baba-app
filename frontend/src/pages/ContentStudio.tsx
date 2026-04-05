@@ -34,6 +34,7 @@ import {
   fetchTemplates, fetchTemplate,
   type Template, type TemplateDetail,
 } from '../api/generatorService';
+import { createAiDraft } from '../api/agentService';
 import type { RawContent } from '../types';
 
 const { Text } = Typography;
@@ -80,7 +81,9 @@ const SourceBrowser: React.FC<{
   loading: boolean;
   selected: RawContent | null;
   onSelect: (item: RawContent) => void;
-}> = ({ items, loading, selected, onSelect }) => {
+  onAiDraft: (id: string) => void;
+  isDrafting: boolean;
+}> = ({ items, loading, selected, onSelect, onAiDraft, isDrafting }) => {
   const [search, setSearch] = useState('');
   const filtered = items.filter(i =>
     i.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -202,6 +205,26 @@ const SourceBrowser: React.FC<{
                 whiteSpace: 'pre-wrap', maxHeight: 400, overflowY: 'auto',
               }}>
                 {parsed.body}
+              </div>
+
+              <div style={{ marginTop: 12 }}>
+                <Button
+                  type="primary"
+                  icon={<EditOutlined />}
+                  onClick={() => onAiDraft(selected.id)}
+                  loading={isDrafting}
+                  block
+                  style={{
+                    background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
+                    border: 'none',
+                    fontWeight: 600,
+                  }}
+                >
+                  ✨ AI Magic Draft
+                </Button>
+                <Text type="secondary" style={{ fontSize: 10, display: 'block', textAlign: 'center', marginTop: 4 }}>
+                  Generates 5 slides + Social Caption via Gemini
+                </Text>
               </div>
             </>
           )}
@@ -349,8 +372,8 @@ const SlideEditor: React.FC<{
   onSave: (values: Record<string, string>) => Promise<void>;
   saving: boolean;
   selectedRaw: RawContent | null;
-}> = ({ templateDetail, templateLoading, activeSlide, onSlideChange, onValuesChange, onSave, saving, selectedRaw }) => {
-  const [form] = Form.useForm<Record<string, string>>();
+  form: any;
+}> = ({ templateDetail, templateLoading, activeSlide, onSlideChange, onValuesChange, onSave, saving, selectedRaw, form }) => {
 
   const handleSave = async () => {
     try {
@@ -489,6 +512,13 @@ const SlideEditor: React.FC<{
           />
         </Form.Item>
 
+        <Form.Item
+          name="caption"
+          label={<Text style={{ fontSize: 12 }}>Social Media Caption (AI Generated)</Text>}
+        >
+          <TextArea rows={5} placeholder="The text that goes with your post…" showCount style={{ fontSize: 12 }} />
+        </Form.Item>
+
         <Button
           type="primary"
           icon={<SaveOutlined />}
@@ -520,9 +550,12 @@ const ContentStudio: React.FC = () => {
   const [rawLoading, setRawLoading]           = useState(false);
   const [templateLoading, setTemplateLoading] = useState(false);
   const [saving, setSaving]                   = useState(false);
+  const [isDrafting, setIsDrafting]           = useState(false);
 
   const [sourceCollapsed, setSourceCollapsed]   = useState(false);
   const [previewCollapsed, setPreviewCollapsed] = useState(false);
+
+  const [form] = Form.useForm();
 
   // Load data on mount
   useEffect(() => {
@@ -582,13 +615,43 @@ const ContentStudio: React.FC = () => {
 
       await apiClient.post('/data/content', payload);
       message.success(`✅ Saved! Draft ID: ${postId}`, 6);
-    } catch (err: any) {
-      const detail = err?.response?.data?.detail ?? err?.message ?? 'unknown error';
-      message.error(`❌ Save failed: ${detail}`, 6);
     } finally {
       setSaving(false);
     }
   }, [templateDetail, selectedRaw]);
+
+  // AI MAGIC DRAFT
+  const handleAiDraft = async (rawId: string) => {
+    if (!selectedTemplate) return;
+    setIsDrafting(true);
+    const hide = message.loading('🪄 AI is drafting your content...', 0);
+    try {
+      const res = await createAiDraft(rawId, selectedTemplate);
+      
+      // Transform AI response back into form fields
+      // Our API returns: { content_name, caption, slides: [{type, HOOK_TITLE...}, ...] }
+      const newFields: Record<string, any> = {
+        '__content_name': res.data.content_name,
+        '__platforms': res.data.platforms,
+        'caption': res.data.caption
+      };
+
+      res.data.slides.forEach((s: any) => {
+        Object.keys(s).forEach(key => {
+          if (key !== 'type') newFields[key] = s[key];
+        });
+      });
+
+      form.setFieldsValue(newFields);
+      setLiveValues(newFields);
+      message.success('✨ AI Draft completed! Review the slides and caption.', 4);
+    } catch (err: any) {
+      message.error(`Magic failed: ${err.message}`);
+    } finally {
+      setIsDrafting(false);
+      hide();
+    }
+  };
 
   return (
     // Full-screen layout — fills the viewport height below the header
@@ -673,6 +736,8 @@ const ContentStudio: React.FC = () => {
                 loading={rawLoading}
                 selected={selectedRaw}
                 onSelect={setSelectedRaw}
+                onAiDraft={handleAiDraft}
+                isDrafting={isDrafting}
               />
             </div>
           )}
@@ -705,6 +770,7 @@ const ContentStudio: React.FC = () => {
               onSave={handleSave}
               saving={saving}
               selectedRaw={selectedRaw}
+              form={form}
             />
           </div>
         </div>

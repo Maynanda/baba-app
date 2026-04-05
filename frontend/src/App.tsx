@@ -19,7 +19,7 @@ import {
 import { Layout, Menu, Typography, Space } from 'antd';
 import {
   DatabaseOutlined, CloudSyncOutlined,
-  FormatPainterOutlined, EditOutlined, RobotOutlined,
+  FormatPainterOutlined, EditOutlined, RobotOutlined, BookOutlined,
 } from '@ant-design/icons';
 
 // ── Page imports ──────────────────────────────────────────────────────────────
@@ -27,6 +27,7 @@ import DataManagement  from './pages/DataManagement';
 import ScraperConsole  from './pages/ScraperConsole';
 import VisualGenerator from './pages/VisualGenerator';
 import ContentStudio   from './pages/ContentStudio';
+import Walkthrough     from './pages/Walkthrough';
 
 const { Header, Content } = Layout;
 const { Text } = Typography;
@@ -53,6 +54,11 @@ const navItems = [
     key: 'studio',
     icon: <EditOutlined />,
     label: <Link to="/studio">Content Studio</Link>,
+  },
+  {
+    key: 'guide',
+    icon: <BookOutlined />,
+    label: <Link to="/guide">Guide</Link>,
   },
 ];
 
@@ -113,6 +119,7 @@ const AppLayout: React.FC = () => {
           <Route path="/data"      element={<DataManagement />} />
           <Route path="/generator" element={<VisualGenerator />} />
           <Route path="/studio"    element={<ContentStudio />} />
+          <Route path="/guide"     element={<Walkthrough />} />
         </Routes>
       </Content>
     </Layout>

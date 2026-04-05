@@ -40,6 +40,7 @@ def init_db(conn=None):
         niche TEXT,
         template TEXT,
         platforms TEXT,
+        caption TEXT,
         data_json TEXT,
         created_at TIMESTAMP,
         updated_at TIMESTAMP
@@ -119,6 +120,16 @@ def save_raw(data: dict):
     conn.commit()
     conn.close()
 
+def get_raw_item(raw_id: str) -> dict:
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT * FROM raw_content WHERE id = ?", (raw_id,))
+    row = c.fetchone()
+    conn.close()
+    if row:
+        return dict(row)
+    return None
+
 def get_all_raw():
     conn = get_connection()
     c = conn.cursor()
@@ -132,13 +143,14 @@ def save_post(data: dict):
     conn = get_connection()
     c = conn.cursor()
     c.execute("""
-        INSERT INTO posts (id, status, niche, template, platforms, data_json, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO posts (id, status, niche, template, platforms, caption, data_json, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
             status=excluded.status,
             niche=excluded.niche,
             template=excluded.template,
             platforms=excluded.platforms,
+            caption=excluded.caption,
             data_json=excluded.data_json,
             updated_at=excluded.updated_at
     """, (
@@ -147,6 +159,7 @@ def save_post(data: dict):
         data.get("niche", ""),
         data.get("template", ""),
         json.dumps(data.get("platform", [])),
+        data.get("caption", ""),
         json.dumps(data),
         datetime.now().isoformat(),
         datetime.now().isoformat()
