@@ -81,10 +81,13 @@ def save_discovered(portal_id: str, url: str, title: str):
     conn.commit()
     conn.close()
 
-def get_all_discovered(status="discovered"):
+def get_all_discovered(status=None):
     conn = get_connection()
     c = conn.cursor()
-    c.execute("SELECT * FROM discovered_links WHERE status = ? ORDER BY discovered_at DESC", (status,))
+    if status:
+        c.execute("SELECT * FROM discovered_links WHERE status = ? ORDER BY discovered_at DESC", (status,))
+    else:
+        c.execute("SELECT * FROM discovered_links ORDER BY discovered_at DESC")
     rows = c.fetchall()
     conn.close()
     return [dict(row) for row in rows]

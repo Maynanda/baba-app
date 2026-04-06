@@ -8,7 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from src.database import save_discovered, is_url_seen
 from scraper.parser_generator import CFG_PATH
 
-def run_all_portals(use_stealth: bool = False):
+def run_all_portals(use_stealth: bool = False, niche: str | None = None):
     if not CFG_PATH.exists():
         print("[portal_scraper] No portals configuration found.")
         return 0
@@ -17,6 +17,12 @@ def run_all_portals(use_stealth: bool = False):
         config = yaml.safe_load(f) or {}
         
     portals = config.get("portals", [])
+    if niche:
+        portals = [p for p in portals if p.get("niche") == niche]
+        
+    if not portals:
+        print(f"[portal_scraper] No portals found for niche: {niche}")
+        return 0
     total_discovered = 0
     
     for p in portals:

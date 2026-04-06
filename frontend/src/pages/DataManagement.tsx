@@ -20,6 +20,7 @@ import {
 } from 'antd';
 import { DatabaseOutlined, ReloadOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
+import { Link } from 'react-router-dom';
 
 import {
   fetchRawData,
@@ -87,7 +88,11 @@ const DataManagement: React.FC = () => {
     }
   }, []);
 
-  useEffect(() => { loadRaw(); }, [loadRaw]);
+  useEffect(() => { 
+    loadRaw();
+    loadPosts();
+    loadDiscovered();
+  }, [loadRaw, loadPosts, loadDiscovered]);
 
   // ── Delete handler ─────────────────────────────────────────────────────────
   const handleDeleteRaw = async (id: string) => {
@@ -196,6 +201,15 @@ const DataManagement: React.FC = () => {
             pagination={{ pageSize: 15, showTotal: (t) => `${t} links` }}
             scroll={{ x: 'max-content' }}
             style={{ width: '100%' }}
+            locale={{
+              emptyText: (
+                <div style={{ padding: '32px 0' }}>
+                  <Text type="secondary">No discovered links found.</Text>
+                  <br />
+                  <Link to="/scraper" style={{ fontSize: 12 }}>Go to Scraper Console to add a Portal</Link>
+                </div>
+              )
+            }}
           />
         </>
       ),
@@ -219,10 +233,6 @@ const DataManagement: React.FC = () => {
           defaultActiveKey="raw"
           items={tabs}
           className="premium-tabs"
-          onChange={(key) => {
-            if (key === 'content' && postsData.length === 0) loadPosts();
-            if (key === 'discovered' && discovered.length === 0) loadDiscovered();
-          }}
           style={{ background: 'transparent' }}
         />
       </div>
