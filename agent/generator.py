@@ -181,7 +181,12 @@ def generate_draft(raw_ids: list[str], template_id: str = "carousel_dark_1x1", p
     )
 
     if pro_mode:
-        prompt += "\n\nAUTONOMOUS MODE: If you feel the target template structure is suboptimal for the content, use 'register_new_template' to create a better one. Then, produce content matching your new template's placeholders."
+        prompt += "\n\nAUTONOMOUS INTELLIGENCE MODE:\n" \
+                  "1. Perform a deep meta-analysis of ALL selected research materials.\n" \
+                  "2. Identify 'High-Value Clusters'—insights that connect multiple articles.\n" \
+                  "3. If the current template structure is too restrictive or generic, use 'register_new_template' to DESIGN a custom layout specifically for this story.\n" \
+                  "4. You may use 'list_recent_trends' to ensure your synthesis aligns with the broader context of the database.\n" \
+                  "5. Return the finalized content matching your chosen or new template."
 
     logger.info(f"[agent] Calling {MODEL_NAME} for synthesis (pro_mode={pro_mode})...")
     try:
