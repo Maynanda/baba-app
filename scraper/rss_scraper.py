@@ -98,6 +98,24 @@ def scrape_feed(feed_url: str, feed_name: str = "Unknown", niche: str = DEFAULT_
         title = entry.get("title", "Untitled")
         body = _extract_body(entry)
         image_urls = _extract_image(entry)
+        
+        # --- DEEP SCRAPE UPGRADE ---
+        # If the RSS body is too short (summary only) or missing images, 
+        # we perform a deep scrape of the actual URL to get full content.
+        if len(body) < 600 or not image_urls:
+            print(f"  [rss_scraper] Snippet too short or no images. Deep scraping: {url}")
+            from scraper.blog_scraper import scrape_article
+            # We use scrape_article but skip its DB save because we'll do it here
+            deep_data = scrape_article(url, niche=niche, download_imgs=True, use_stealth=False)
+            if deep_data:
+                body = deep_data.get("body", body)
+                image_urls = deep_data.get("image_urls", image_urls)
+                local_images = deep_data.get("local_images", [])
+            else:
+                local_images = []
+        else:
+            local_images = []
+
         keywords = [tag.term for tag in entry.get("tags", [])][:8] if entry.get("tags") else []
         author = entry.get("author", "")
         pub_date = _parse_date(entry)
@@ -117,7 +135,7 @@ def scrape_feed(feed_url: str, feed_name: str = "Unknown", niche: str = DEFAULT_
             "published_date": pub_date,
             "body": body[:5000],
             "image_urls": image_urls,
-            "local_images": [],  # images not auto-downloaded from RSS to keep it fast
+            "local_images": local_images,
             "keywords": keywords,
             "status": "raw",
             "content_plan_id": None,

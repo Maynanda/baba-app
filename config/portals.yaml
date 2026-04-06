@@ -1,0 +1,6 @@
+portals:
+  - id: artificialintelligence_news
+    url: https://www.artificialintelligence-news.com/artificial-intelligence-news/
+    niche: ai-engineering
+    selectors:
+      link: ".elementor-post__title a"

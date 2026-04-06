@@ -27,40 +27,78 @@ HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
         "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/120.0.0.0 Safari/537.36"
-    )
+        "Chrome/124.0.0.0 Safari/537.36"
+    ),
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Cache-Control": "max-age=0",
+    "Upgrade-Insecure-Requests": "1",
 }
 TIMEOUT = 15
 
 
 def _extract_images(page, base_url: str) -> list[str]:
-    """Extract all image src URLs from the article body."""
+    """Extract all image src URLs from the article body or featured area."""
     imgs = []
-    for tag in page.css("article img, .post-content img, .entry-content img, main img"):
-        src = tag.attrib.get("src") or tag.attrib.get("data-src") or ""
-        if src.startswith("http"):
-            imgs.append(src)
-        elif src.startswith("/"):
-            parsed = urlparse(base_url)
-            imgs.append(f"{parsed.scheme}://{parsed.netloc}{src}")
-    # Remove duplicates and limit to 10 images
-    seen_imgs = []
-    for img in imgs:
-        if img not in seen_imgs:
-            seen_imgs.append(img)
-    return seen_imgs[:10]
+    # Try common article image containers
+    selectors = [
+        "article img", 
+        ".elementor-widget-theme-post-content img", 
+        ".elementor-post__thumbnail img",
+        ".attachment-full",
+        ".post-content img", 
+        ".entry-content img",
+        "main img"
+    ]
+    for sel in selectors:
+        for tag in page.css(sel):
+            # Prefer data-src or srcset if available (for lazy loading)
+            src = tag.attrib.get("data-src") or tag.attrib.get("src") or ""
+            if not src and tag.attrib.get("srcset"):
+                # Grab the first URL in srcset
+                src = tag.attrib.get("srcset").split(",")[0].split()[0]
+            
+            if not src or "logo" in src.lower() or "avatar" in src.lower():
+                continue
+                
+            if src.startswith("http"):
+                imgs.append(src)
+            elif src.startswith("/"):
+                parsed = urlparse(base_url)
+                imgs.append(f"{parsed.scheme}://{parsed.netloc}{src}")
+                
+    # Unique links in order
+    result = []
+    for i in imgs:
+        if i not in result:
+            result.append(i)
+    return result[:10]
 
 
 def _extract_body(page) -> str:
     """Extract main article body text."""
     # Try common article containers in order of preference
-    for selector in ["article", "main", ".post-content", ".entry-content", ".article-body"]:
+    # Added elementor-widget-theme-post-content for AI News and similar sites
+    selectors = [
+        ".elementor-widget-theme-post-content",
+        "article", 
+        "main", 
+        ".post-content", 
+        ".entry-content", 
+        ".article-body"
+    ]
+    for selector in selectors:
         containers = page.css(selector)
         if containers:
-            return containers[0].get_all_text()
-    # Fallback: all paragraphs
+            # We take the first container that has substantial text
+            for c in containers:
+                text = c.get_all_text().strip()
+                if len(text) > 200:
+                    return text
+                    
+    # Fallback: all paragraphs in a sensible way
     paras = page.css("p")
-    return "\n".join(p.get_all_text().strip() for p in paras if p.get_all_text() and len(p.get_all_text().strip()) > 50)
+    return "\n\n".join(p.get_all_text().strip() for p in paras if p.get_all_text() and len(p.get_all_text().strip()) > 60)
 
 
 def _extract_keywords(page, title: str) -> list[str]:
@@ -75,7 +113,7 @@ def _extract_keywords(page, title: str) -> list[str]:
     return kws
 
 
-def scrape_article(url: str, niche: str = DEFAULT_NICHE, download_imgs: bool = True, use_stealth: bool = False) -> dict | None:
+def scrape_article(url: str, niche: str = DEFAULT_NICHE, download_imgs: bool = True, use_stealth: bool = False, save_to_db: bool = True) -> dict | None:
     """
     Scrape a single article URL and return a structured raw item dict.
     Returns None if the URL is a duplicate or fetch fails.
@@ -84,14 +122,26 @@ def scrape_article(url: str, niche: str = DEFAULT_NICHE, download_imgs: bool = T
         print(f"[blog_scraper] Skipping duplicate: {url}")
         return None
 
-    print(f"[blog_scraper] Scraping: {url}")
+    print(f"[blog_scraper] Scraping: {url} (stealth={use_stealth})")
     try:
         if use_stealth:
-            from scrapling import StealthyFetcher
-            page = StealthyFetcher.fetch(url)
+            # Fix for "Playwright Sync API inside asyncio loop"
+            # If we are in an asyncio loop (FastAPI), sync playwright will crash.
+            # We use Fetcher + Stealth headers as a fallback or suggest Async.
+            try:
+                from scrapling import StealthyFetcher
+                page = StealthyFetcher.fetch(url)
+            except RuntimeError as e:
+                if "asyncio loop" in str(e):
+                    print(f"  [blog_scraper] ⚠️  Async loop detected. Falling back to Fetcher with stealth headers.")
+                    from scrapling import Fetcher
+                    page = Fetcher.get(url, headers={**HEADERS, "Sec-Ch-Ua-Platform": "macOS"})
+                else:
+                    raise e
         else:
             from scrapling import Fetcher
-            page = Fetcher.get(url)
+            # We use custom headers to be more robust for WordPress sites
+            page = Fetcher.get(url, headers=HEADERS)
     except Exception as e:
         print(f"[blog_scraper] Fetch failed: {e}")
         return None
@@ -147,11 +197,12 @@ def scrape_article(url: str, niche: str = DEFAULT_NICHE, download_imgs: bool = T
     }
 
     # Save to SQLite database
-    from src.database import save_raw
-    save_raw(item)
-
-    mark_seen(url)
-    print(f"[blog_scraper] Saved to DB → {raw_id}")
+    if save_to_db:
+        from src.database import save_raw
+        save_raw(item)
+        mark_seen(url)
+        print(f"[blog_scraper] Saved to DB → {raw_id}")
+    
     return item
 
 

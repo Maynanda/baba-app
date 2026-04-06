@@ -38,3 +38,7 @@ feeds:
   - url: https://ai.googleblog.com/feeds/posts/default
     name: Google AI Blog
     niche: ai-engineering
+
+  - url: https://www.artificialintelligence-news.com/feed/
+    name: AI News (AI News Network)
+    niche: ai-engineering
