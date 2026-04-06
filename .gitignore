@@ -28,3 +28,9 @@ build/
 # OS specific
 .DS_Store
 Thumbs.db
+
+# Local Database
+data/*.sqlite
+data/raw/images/
+.env
+.env.example

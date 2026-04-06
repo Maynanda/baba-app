@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Typography, Table, Card, Button, Modal, Form, Input, Select, 
-  Space, Tag, Popconfirm, Divider, Badge, Empty, List, message 
+  Space, Tag, Popconfirm, Divider, Badge, Empty, List, message, Switch
 } from 'antd';
 import { 
   GlobalOutlined, 
@@ -9,27 +9,28 @@ import {
   DeleteOutlined, 
   ThunderboltOutlined,
   HistoryOutlined,
-  EditOutlined
+  EditOutlined,
+  PlayCircleOutlined,
+  PauseCircleOutlined,
+  ClockCircleOutlined
 } from '@ant-design/icons';
 import { 
   fetchFeeds, addFeed, deleteFeed, updateFeed,
-  fetchPortals, deletePortal, fetchScheduledJobs, triggerJob
+  fetchPortals, deletePortal, fetchScheduledJobs, triggerJob,
+  fetchSchedulerSettings, updateSchedulerSettings,
+  type FeedEntry, type PortalEntry, type ScheduledJob, type SchedulerConfig 
 } from '../api/sourceService';
-import type { FeedEntry, PortalEntry, ScheduledJob } from '../api/sourceService';
 
 const { Title, Text, Paragraph } = Typography;
 
-const FREQUENCY_LABELS: Record<string, string> = {
-  '1h': 'Ultra-Fast (1h)',
-  '6h': 'Recommended (6h)',
-  '12h': 'Standard (12h)',
-  '24h': 'Daily (24h)',
-};
+const FREQUENCY_OPTIONS = [1, 2, 6, 12, 24];
 
 const SourceManagement: React.FC = () => {
   const [feeds, setFeeds] = useState<FeedEntry[]>([]);
   const [portals, setPortals] = useState<PortalEntry[]>([]);
   const [jobs, setJobs] = useState<ScheduledJob[]>([]);
+  const [schedulerConfigs, setSchedulerConfigs] = useState<Record<string, SchedulerConfig>>({});
+  
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingFeed, setEditingFeed] = useState<FeedEntry | null>(null);
@@ -38,14 +39,16 @@ const SourceManagement: React.FC = () => {
   const loadAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [f, p, j] = await Promise.all([
+      const [f, p, j, configs] = await Promise.all([
         fetchFeeds(),
         fetchPortals(),
-        fetchScheduledJobs()
+        fetchScheduledJobs(),
+        fetchSchedulerSettings()
       ]);
       setFeeds(f);
       setPortals(p);
       setJobs(j);
+      setSchedulerConfigs(configs);
     } catch (err) {
       console.error(err);
       message.error("Failed to load source data");
@@ -58,15 +61,29 @@ const SourceManagement: React.FC = () => {
     loadAll();
   }, [loadAll]);
 
+  const handleUpdateJob = async (jobId: string, enabled: boolean, freq: number) => {
+    try {
+      await updateSchedulerSettings(jobId, enabled, freq);
+      message.success(`Automation settings updated`);
+      loadAll();
+    } catch (err) {
+      message.error("Failed to update scheduler");
+    }
+  };
+
+  const handleTriggerJob = async (jobId: string) => {
+    try {
+      await triggerJob(jobId);
+      message.success("Manual task triggered");
+      loadAll();
+    } catch (err) {
+      message.error("Failed to trigger task");
+    }
+  };
+
   const handleOpenEdit = (feed: FeedEntry) => {
     setEditingFeed(feed);
     form.setFieldsValue(feed);
-    setModalVisible(true);
-  };
-
-  const handleOpenAdd = () => {
-    setEditingFeed(null);
-    form.resetFields();
     setModalVisible(true);
   };
 
@@ -74,15 +91,15 @@ const SourceManagement: React.FC = () => {
     try {
       if (editingFeed) {
         await updateFeed(values);
-        message.success("RSS source updated");
+        message.success("Source updated");
       } else {
         await addFeed(values);
-        message.success("RSS source added");
+        message.success("Source added");
       }
       setModalVisible(false);
       loadAll();
     } catch (err) {
-      message.error("Failed to save RSS source");
+      message.error("Failed to save source");
     }
   };
 
@@ -93,21 +110,6 @@ const SourceManagement: React.FC = () => {
       loadAll();
     } catch (err) {
       message.error("Failed to remove source");
-    }
-  };
-
-  const handleTriggerJob = async (jobId: string) => {
-    setLoading(true);
-    try {
-      await triggerJob(jobId);
-      message.loading(`Triggering ${jobId}...`, 1.5).then(() => {
-        message.success("Task started in background");
-        loadAll();
-      });
-    } catch (err) {
-      message.error("Failed to trigger task");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -136,26 +138,17 @@ const SourceManagement: React.FC = () => {
       title: 'Niche',
       dataIndex: 'niche',
       key: 'niche',
-      width: 120,
-      render: (n: string) => <Tag color="blue" style={{ borderRadius: 12, padding: '0 10px' }}>{n}</Tag>
-    },
-    {
-      title: 'Frequency',
-      dataIndex: 'frequency',
-      key: 'frequency',
       width: 140,
-      render: (f: string) => (
-        <Badge status={f === '1h' ? 'warning' : 'success'} text={f || '6h'} />
-      )
+      render: (n: string) => <Tag color="blue">{n}</Tag>
     },
     {
       title: 'Action',
       key: 'action',
-      width: 120,
+      width: 100,
       render: (_: any, record: FeedEntry) => (
         <Space>
-          <Button type="text" shape="circle" icon={<EditOutlined style={{ color: '#1677ff' }} />} onClick={() => handleOpenEdit(record)} />
-          <Popconfirm title="Remove this source?" onConfirm={() => handleDeleteFeed(record.url)} okText="Delete" cancelText="Cancel">
+          <Button type="text" shape="circle" icon={<EditOutlined />} onClick={() => handleOpenEdit(record)} />
+          <Popconfirm title="Remove source?" onConfirm={() => handleDeleteFeed(record.url)}>
             <Button danger type="text" shape="circle" icon={<DeleteOutlined />} />
           </Popconfirm>
         </Space>
@@ -175,18 +168,11 @@ const SourceManagement: React.FC = () => {
       )
     },
     {
-      title: 'Niche',
-      dataIndex: 'niche',
-      key: 'niche',
-      width: 120,
-      render: (n: string) => <Tag color="purple" style={{ borderRadius: 12, padding: '0 10px' }}>{n}</Tag>
-    },
-    {
       title: 'Action',
       key: 'action',
-      width: 100,
+      width: 80,
       render: (_: any, record: PortalEntry) => (
-        <Popconfirm title="Remove this portal?" onConfirm={() => handleDeletePortal(record.id)}>
+        <Popconfirm title="Remove portal?" onConfirm={() => handleDeletePortal(record.id)}>
           <Button danger type="text" icon={<DeleteOutlined />} />
         </Popconfirm>
       )
@@ -194,136 +180,101 @@ const SourceManagement: React.FC = () => {
   ];
 
   return (
-    <div style={{ padding: '32px', maxWidth: '1400px', margin: '0 auto' }}>
-      <header style={{ marginBottom: 32, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <Space direction="vertical" size={4}>
-          <Title level={2} style={{ margin: 0, fontWeight: 700 }}>
-            Source & Scheduler Manager
-          </Title>
-          <Text type="secondary">Control the autonomous ingestion engine and manage feed settings.</Text>
-        </Space>
-        
-        <Card size="small" style={{ borderRadius: 12, background: '#f8fafc' }}>
-          <Space>
-            <HistoryOutlined style={{ color: '#1677ff' }} />
-            <Text type="secondary">Next Global Sweep:</Text>
-            <Text strong>~ 2 hours</Text>
-          </Space>
-        </Card>
+    <div style={{ padding: '40px', maxWidth: '1400px', margin: '0 auto' }}>
+      <header style={{ marginBottom: 32 }}>
+        <Title level={2}>Source & Scheduler Manager</Title>
+        <Text type="secondary">Manage autonomous intelligence gathering and automation intervals.</Text>
       </header>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 380px', gap: 32 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 420px', gap: 32 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
-          {/* RSS SOURCES */}
+          {/* RSS Feed Card */}
           <Card 
-            title={
-              <Space>
-                <ThunderboltOutlined style={{ color: '#52c41a' }} />
-                <span>RSS Feeds ({feeds.length})</span>
-              </Space>
-            }
-            extra={
-              <Button type="primary" shape="round" icon={<PlusOutlined />} onClick={handleOpenAdd}>
-                Add New Source
-              </Button>
-            }
+            title={<Space><ThunderboltOutlined style={{ color: '#52c41a' }} /><span>RSS Intelligence Feeds</span></Space>}
+            extra={<Button type="primary" shape="round" icon={<PlusOutlined />} onClick={() => { setEditingFeed(null); form.resetFields(); setModalVisible(true); }}>Add Source</Button>}
             bodyStyle={{ padding: 0 }}
-            style={{ borderRadius: 16, overflow: 'hidden', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+            style={{ borderRadius: 16, overflow: 'hidden' }}
           >
-            <Table 
-              dataSource={feeds} 
-              columns={feedColumns} 
-              rowKey="url" 
-              pagination={false} 
-              loading={loading}
-              size="large"
-            />
+            <Table dataSource={feeds} columns={feedColumns} rowKey="url" pagination={false} loading={loading} />
           </Card>
 
-          {/* PORTAL SOURCES */}
+          {/* Portal Discovery Card */}
           <Card 
-            title={
-              <Space>
-                <GlobalOutlined style={{ color: '#722ed1' }} />
-                <span>Active Portals ({portals.length})</span>
-              </Space>
-            }
-            className="premium-card"
+            title={<Space><GlobalOutlined style={{ color: '#722ed1' }} /><span>Discovery Portals</span></Space>}
+            style={{ borderRadius: 16 }}
           >
-            <Table 
-              dataSource={portals} 
-              columns={portalColumns} 
-              rowKey="id" 
-              pagination={false} 
-              loading={loading}
-              size="middle"
-              locale={{ emptyText: <Empty description="No Portals configured yet." /> }}
-            />
+            <Table dataSource={portals} columns={portalColumns} rowKey="id" pagination={false} loading={loading} />
           </Card>
         </div>
 
-        {/* SCHEDULER SIDEBAR */}
+        {/* Scheduler Status Sidebar */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           <Card 
-            title={
-              <Space>
-                <ThunderboltOutlined style={{ color: '#faad14' }} />
-                <span>Automation Status</span>
-              </Space>
-            }
-            className="premium-card"
-            style={{ borderTop: '4px solid #faad14' }}
+            title={<Space><ClockCircleOutlined style={{ color: '#faad14' }} /><span>Automation Status</span></Space>}
+            style={{ borderRadius: 16 }}
           >
-            <Badge status="processing" text="Scheduler Active" style={{ marginBottom: 16, display: 'block', fontWeight: 600 }} />
-            
-            <Divider style={{ margin: '8px 0' }}><Text type="secondary" style={{ fontSize: 11 }}>ACTIVE JOBS</Text></Divider>
-            
             <List
               loading={loading}
-              dataSource={jobs}
-              renderItem={(item) => (
-                <List.Item 
-                  style={{ padding: '12px 0' }}
-                  actions={[
-                    <Button 
-                      key="run" 
-                      type="text" 
-                      size="small"
-                      onClick={() => handleTriggerJob(item.id)}
-                      icon={<ThunderboltOutlined style={{ color: '#faad14' }} />}
-                    >
-                      Run Now
-                    </Button>
-                  ]}
-                >
-                  <Space direction="vertical" size={2} style={{ width: '100%' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-                      <Text strong style={{ fontSize: 13 }}>{item.id === 'rss_auto_scrape' ? '🔄 RSS Digester' : '🔭 Portal Discovery'}</Text>
-                      <Tag color="cyan" style={{ fontSize: 10, margin: 0 }}>ACTIVE</Tag>
+              dataSource={Object.entries(schedulerConfigs)}
+              renderItem={([id, config]) => {
+                const job = jobs.find(j => j.id === id);
+                return (
+                  <Card size="small" style={{ marginBottom: 12, background: config.enabled ? '#fff' : '#f8fafc' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+                       <Space direction="vertical" size={0}>
+                          <Text strong>{config.name}</Text>
+                          <Text type="secondary" style={{ fontSize: 11 }}>{id}</Text>
+                       </Space>
+                       <Switch 
+                         checked={config.enabled} 
+                         onChange={(checked) => handleUpdateJob(id, checked, config.frequency_hours)} 
+                         size="small"
+                       />
                     </div>
-                    <Space size={4}>
-                      <HistoryOutlined style={{ fontSize: 10, color: '#8c8c8c' }} />
-                      <Text type="secondary" style={{ fontSize: 11 }}>
-                        Next: {item.next_run_time && item.next_run_time !== 'None' ? new Date(item.next_run_time).toLocaleString('en-US', { hour: 'numeric', minute: '2-digit' }) : 'Running...'}
-                      </Text>
-                    </Space>
-                  </Space>
-                </List.Item>
-              )}
+                    
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                       <Space direction="vertical" size={2}>
+                          <Space size={4}>
+                             <ClockCircleOutlined style={{ fontSize: 10, color: '#8c8c8c' }} />
+                             <Text type="secondary" style={{ fontSize: 11 }}>Every {config.frequency_hours}h</Text>
+                          </Space>
+                          <Space size={4}>
+                             <HistoryOutlined style={{ fontSize: 10, color: '#8c8c8c' }} />
+                             <Text type="secondary" style={{ fontSize: 11 }}>
+                               Next: {job?.next_run_time && job.next_run_time !== 'None' ? new Date(job.next_run_time).toLocaleTimeString() : 'Paused'}
+                             </Text>
+                          </Space>
+                       </Space>
+                       
+                       <Space>
+                          <Select 
+                            size="small" 
+                            style={{ width: 70 }} 
+                            value={config.frequency_hours}
+                            onChange={(v) => handleUpdateJob(id, config.enabled, v)}
+                          >
+                             {FREQUENCY_OPTIONS.map(f => <Select.Option key={f} value={f}>{f}h</Select.Option>)}
+                          </Select>
+                          <Button 
+                            shape="circle" 
+                            size="small" 
+                            icon={<ThunderboltOutlined />} 
+                            onClick={() => handleTriggerJob(id)}
+                            title="Run Now"
+                          />
+                       </Space>
+                    </div>
+                  </Card>
+                );
+              }}
             />
-            
-            <Divider style={{ margin: '16px 0' }} />
-            <Paragraph type="secondary" style={{ fontSize: 12 }}>
-              The scheduler runs in the background even if this page is closed. It ensures your 
-              "Raw Content" stays fresh 24/7.
-            </Paragraph>
           </Card>
-
-          <Card className="premium-card" style={{ background: '#f0f5ff' }}>
-            <Title level={5}>Pro Tip</Title>
-            <Text type="secondary" style={{ fontSize: 13 }}>
-              RSS is the most reliable way to get high-quality content. Try to find a /feed/ for all major websites.
-            </Text>
+          
+          <Card style={{ background: '#f0f5ff', borderRadius: 16 }}>
+             <Title level={5}>Pro Automation</Title>
+             <Text type="secondary" style={{ fontSize: 13 }}>
+                Increase frequency (1h-2h) for breaking news sources, and decrease it (24h) for slower portals to save resources.
+             </Text>
           </Card>
         </div>
       </div>
@@ -337,7 +288,7 @@ const SourceManagement: React.FC = () => {
         confirmLoading={loading}
         destroyOnClose
       >
-        <Form form={form} layout="vertical" onFinish={handleSaveFeed} initialValues={{ niche: 'ai-engineering', frequency: '6h' }}>
+        <Form form={form} layout="vertical" onFinish={handleSaveFeed} initialValues={{ niche: 'ai-engineering' }}>
           <Form.Item name="name" label="Source Name" rules={[{ required: true }]}>
             <Input placeholder="e.g. AI News Portal" />
           </Form.Item>
@@ -346,23 +297,13 @@ const SourceManagement: React.FC = () => {
             <Input placeholder="https://example.com/feed/" disabled={!!editingFeed} />
           </Form.Item>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-            <Form.Item name="niche" label="Niche Tag" rules={[{ required: true }]}>
-              <Select>
-                <Select.Option value="ai-engineering">AI Engineering</Select.Option>
-                <Select.Option value="data-science">Data Science</Select.Option>
-                <Select.Option value="productivity">Productivity</Select.Option>
-              </Select>
-            </Form.Item>
-
-            <Form.Item name="frequency" label="Fetch Every..." rules={[{ required: true }]}>
-              <Select>
-                {Object.entries(FREQUENCY_LABELS).map(([val, label]) => (
-                  <Select.Option key={val} value={val}>{label}</Select.Option>
-                ))}
-              </Select>
-            </Form.Item>
-          </div>
+          <Form.Item name="niche" label="Niche Tag" rules={[{ required: true }]}>
+            <Select>
+              <Select.Option value="ai-engineering">AI Engineering</Select.Option>
+              <Select.Option value="data-science">Data Science</Select.Option>
+              <Select.Option value="productivity">Productivity</Select.Option>
+            </Select>
+          </Form.Item>
         </Form>
       </Modal>
     </div>

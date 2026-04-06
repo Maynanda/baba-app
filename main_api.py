@@ -59,6 +59,24 @@ app.include_router(sources.router,   prefix="/api/sources",   tags=["Sources"])
 def health_check():
     return {"status": "ok", "app": "Baba-App API", "version": "2.2.0"}
 
+from src.scheduler_manager import scheduler, update_job_setting, load_settings
+
+class SchedulerUpdate(BaseModel):
+    job_id: str
+    enabled: bool
+    frequency_hours: int
+
+@app.get("/api/scheduler/settings", tags=["Scheduler"])
+def get_scheduler_settings():
+    return load_settings()
+
+@app.post("/api/scheduler/settings", tags=["Scheduler"])
+def update_scheduler_settings(body: SchedulerUpdate):
+    success = update_job_setting(body.job_id, body.enabled, body.frequency_hours)
+    if not success:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return {"status": "Job configuration updated", "config": body}
+
 @app.get("/api/scheduler/jobs", tags=["Scheduler"])
 def get_scheduled_jobs():
     jobs = []

@@ -1,0 +1,30 @@
+{
+  "id": "T-VISUAL-01",
+  "name": "Visual Hero (TikTok/Reels Style)",
+  "aspect_ratio": "9:16",
+  "platforms": ["tiktok", "instagram_story"],
+  "niche": ["ai-engineering", "data-science"],
+  "status": "active",
+  "description": "Full-screen background image with a high-impact title and hook at the bottom. Perfect for mobile-first engagement.",
+  "placeholders": [
+    "HOOK_IMAGE",
+    "HOOK_TITLE",
+    "HOOK_SUB",
+    "BODY_IMAGE",
+    "BODY_TITLE",
+    "BODY_TEXT",
+    "CTA_IMAGE",
+    "CTA_TITLE",
+    "CTA_TEXT"
+  ],
+  "slides": [
+    { "index": 0, "type": "hook" },
+    { "index": 1, "type": "body" },
+    { "index": 2, "type": "cta" }
+  ],
+  "colors": {
+    "primary": "#000000",
+    "text": "#ffffff",
+    "accent": "#ff0050"
+  }
+}

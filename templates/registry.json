@@ -159,6 +159,20 @@
         "personal_brand"
       ],
       "status": "draft"
+    },
+    {
+      "id": "T-VISUAL-01",
+      "name": "Visual Hero (TikTok/Reels Style)",
+      "platforms": [
+        "tiktok",
+        "instagram_story"
+      ],
+      "aspect_ratio": "9:16",
+      "niche": [
+        "ai-engineering",
+        "data-science"
+      ],
+      "status": "active"
     }
   ]
 }

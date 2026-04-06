@@ -32,11 +32,16 @@ def get_raw_data():
 
 @router.get("/image/{raw_id}/{filename}")
 def serve_raw_image(raw_id: str, filename: str):
-    """Serve a raw scraped image from the data/raw/images directory."""
+    """Serve a raw scraped image. Checks post-id foldér first, then the vault."""
     img_path = DATA_RAW_DIR / "images" / raw_id / filename
-    if not img_path.exists():
-        raise HTTPException(status_code=404, detail="Image not found")
-    return FileResponse(img_path)
+    vault_path = DATA_RAW_DIR / "images" / "_vault" / filename
+    
+    if img_path.exists():
+        return FileResponse(img_path)
+    elif vault_path.exists():
+        return FileResponse(vault_path)
+    
+    raise HTTPException(status_code=404, detail="Image not found in post folder or vault")
 
 
 @router.get("/content")

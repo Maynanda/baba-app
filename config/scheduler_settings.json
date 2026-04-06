@@ -1,0 +1,12 @@
+{
+  "rss_auto_scrape": {
+    "name": "RSS Digester",
+    "frequency_hours": 6,
+    "enabled": true
+  },
+  "portal_auto_discovery": {
+    "name": "Portal Discovery",
+    "frequency_hours": 24,
+    "enabled": true
+  }
+}

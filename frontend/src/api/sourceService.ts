@@ -56,3 +56,22 @@ export const fetchScheduledJobs = async (): Promise<ScheduledJob[]> => {
 export const triggerJob = async (jobId: string): Promise<void> => {
   await apiClient.post(`/scheduler/trigger/${jobId}`);
 };
+
+export interface SchedulerConfig {
+  name: string;
+  enabled: boolean;
+  frequency_hours: number;
+}
+
+export const fetchSchedulerSettings = async (): Promise<Record<string, SchedulerConfig>> => {
+  const resp = await apiClient.get('/scheduler/settings');
+  return resp.data;
+};
+
+export const updateSchedulerSettings = async (jobId: string, enabled: boolean, freq: number): Promise<void> => {
+  await apiClient.post('/scheduler/settings', {
+    job_id: jobId,
+    enabled,
+    frequency_hours: freq
+  });
+};

@@ -8,13 +8,13 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
-  Select, Button, Form, Input, Typography,
+  Checkbox, Select, Button, Form, Input, Typography,
   Space, message, Tag, Divider, Spin, Empty, Row, Col,
 } from 'antd';
 import {
-  EditOutlined, SaveOutlined, EyeOutlined, RobotOutlined,
+  EditOutlined, SaveOutlined, RobotOutlined,
   MenuFoldOutlined, MenuUnfoldOutlined, RightOutlined, LeftOutlined,
-  PictureOutlined, CopyOutlined, GlobalOutlined
+  PictureOutlined, GlobalOutlined
 } from '@ant-design/icons';
 import apiClient from '../api/client';
 import {
@@ -59,9 +59,10 @@ const NicheSelect: React.FC<{ value?: string; onChange: (v: string) => void }> =
 const SourceBrowser: React.FC<{
   items: RawContent[];
   loading: boolean;
-  selected: RawContent | null;
-  onSelect: (item: RawContent) => void;
-}> = ({ items, loading, selected, onSelect }) => {
+  selectedIds: string[];
+  onToggle: (id: string) => void;
+  onView: (item: RawContent) => void;
+}> = ({ items, loading, selectedIds, onToggle, onView }) => {
   const [search, setSearch] = useState('');
   const filtered = items.filter(i =>
     i.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -76,16 +77,17 @@ const SourceBrowser: React.FC<{
         {loading ? <div style={{ padding: 20, textAlign: 'center' }}><Spin size="small" /></div> : 
          filtered.length === 0 ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} /> :
          filtered.map(item => (
-           <div key={item.id} onClick={() => onSelect(item)} style={{
+           <div key={item.id} style={{
              padding: '10px 14px', cursor: 'pointer',
-             borderLeft: `4px solid ${selected?.id === item.id ? (SOURCE_COLORS[item.source] ?? '#6366f1') : 'transparent'}`,
-             background: selected?.id === item.id ? '#eff6ff' : '#fff',
+             background: selectedIds.includes(item.id) ? '#eff6ff' : '#fff',
              borderBottom: '1px solid #f8fafc',
+             display: 'flex', gap: 10, alignItems: 'flex-start'
            }}>
-             <div style={{ fontSize: 11, fontWeight: 500, color: selected?.id === item.id ? '#1e40af' : '#334155' }}>
-               {item.title}
+             <Checkbox checked={selectedIds.includes(item.id)} onChange={() => onToggle(item.id)} style={{ marginTop: 2 }} />
+             <div onClick={() => onView(item)} style={{ flex: 1 }}>
+               <div style={{ fontSize: 11, fontWeight: 500, color: '#334155' }}>{item.title}</div>
+               <Tag color={SOURCE_COLORS[item.source]} style={{ fontSize: 8, marginTop: 4 }}>{item.source}</Tag>
              </div>
-             <Tag color={SOURCE_COLORS[item.source]} style={{ fontSize: 8, marginTop: 4 }}>{item.source}</Tag>
            </div>
          ))}
       </div>
@@ -100,7 +102,8 @@ const ContentStudio: React.FC = () => {
 
   const [rawItems, setRawItems] = useState<RawContent[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
-  const [selectedRaw, setSelectedRaw] = useState<RawContent | null>(null);
+  const [selectedRawIds, setSelectedRawIds] = useState<string[]>([]);
+  const [viewingRaw, setViewingRaw] = useState<RawContent | null>(null);
   const [fullTemplate, setFullTemplate] = useState<TemplateDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [isDrafting, setIsDrafting] = useState(false);
@@ -129,12 +132,14 @@ const ContentStudio: React.FC = () => {
     return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
   }, [listWidth, inspectorWidth, listCollapsed]);
 
-  const onAiDraft = useCallback(async (rawId: string) => {
+  const handleAiDraft = useCallback(async () => {
     const tplId = form.getFieldValue('template');
-    if (!tplId) return message.warning('Pick a template first.');
+    if (!tplId) return message.warning('Select a design template first.');
+    if (selectedRawIds.length === 0) return message.warning('Select at least one research source.');
+    
     setIsDrafting(true);
     try {
-      const res = await createAiDraft(rawId, tplId);
+      const res = await createAiDraft(selectedRawIds, tplId);
       form.setFieldsValue({
         content_name: res.content_name || 'Draft Post',
         niche: res.niche,
@@ -143,10 +148,10 @@ const ContentStudio: React.FC = () => {
         ...res.slides_data,
       });
       setLiveValues(form.getFieldsValue());
-      message.success('Draft Generated!');
-    } catch { message.error('Draft Error'); }
+      message.success(`AI Synthesized from ${selectedRawIds.length} sources!`);
+    } catch { message.error('Magic Draft failed.'); }
     finally { setIsDrafting(false); }
-  }, [form]);
+  }, [form, selectedRawIds]);
 
   const handleTemplateSelection = useCallback(async (tplId: string) => {
     try {
@@ -172,19 +177,23 @@ const ContentStudio: React.FC = () => {
       if (rawIdFromUrl && !hasAutoDrafted.current) {
         const item = r.find(it => it.id === rawIdFromUrl);
         if (item) {
-          setSelectedRaw(item);
-          // Small delay to ensure the template detail is loaded
+          setViewingRaw(item);
+          setSelectedRawIds([item.id]);
           setTimeout(() => {
-             onAiDraft(item.id);
+             handleAiDraft();
              hasAutoDrafted.current = true;
           }, 1000);
         }
       }
     } catch { message.error('Data loading error'); }
     finally { setLoading(false); }
-  }, [rawIdFromUrl, handleTemplateSelection, onAiDraft]);
+  }, [rawIdFromUrl, handleTemplateSelection, handleAiDraft]);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  const handleToggleSelect = (id: string) => {
+    setSelectedRawIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
 
   const onSave = async () => {
     try {
@@ -203,13 +212,13 @@ const ContentStudio: React.FC = () => {
         caption: vals.caption,
         content_name: vals.content_name,
         slides: slides,
-        raw_ref_id: selectedRaw?.id,
+        raw_ref_ids: selectedRawIds,
       };
       await apiClient.post('/data/content', payload);
-      message.success('Content saved to pipeline!');
+      message.success('Post saved to pipeline!');
     } catch (err) {
       console.error('Save failed:', err);
-      message.error('Please fill required fields.');
+      message.error('Check required fields.');
     }
   };
 
@@ -234,46 +243,61 @@ const ContentStudio: React.FC = () => {
         <div style={{ padding: '12px', borderBottom: '1px solid #f1f5f9', textAlign: 'center' }}>
           <Button type="text" size="small" icon={listCollapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />} onClick={() => setListCollapsed(!listCollapsed)} />
         </div>
-        {!listCollapsed && <SourceBrowser items={rawItems} loading={loading} selected={selectedRaw} onSelect={setSelectedRaw} />}
+        {!listCollapsed && (
+          <SourceBrowser 
+            items={rawItems} 
+            loading={loading} 
+            selectedIds={selectedRawIds} 
+            onToggle={handleToggleSelect} 
+            onView={setViewingRaw} 
+          />
+        )}
       </div>
       {!listCollapsed && <div onMouseDown={() => { draggingRef.current = 'list'; document.body.style.cursor = 'col-resize'; }} style={{ width: 4, cursor: 'col-resize', zIndex: 100 }} />}
 
       {/* ── Panel 2: Inspector (Reader) ── */}
       <div style={{ width: inspectorWidth, background: '#fff', borderRight: '1px solid #e5e7eb', flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
-        {selectedRaw ? (
-          <>
-            <div style={{ padding: '12px 16px', borderBottom: '1px solid #f1f5f9', background: '#f8fafc', display: 'flex', justifyContent: 'space-between' }}>
-               <Title level={5} style={{ margin: 0, fontSize: 12 }}>READER</Title>
-               <Button size="small" type="link" icon={<RobotOutlined />} onClick={() => onAiDraft(selectedRaw.id)} loading={isDrafting}>MAGIC DRAFT</Button>
+        {viewingRaw ? (
+          <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ padding: '12px 16px', borderBottom: '1px solid #f1f5f9', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+               <Title level={5} style={{ margin: 0, fontSize: 10, letterSpacing: 1, color: '#64748b' }}>RESEARCH INSPECTOR</Title>
+               <Button size="small" type="primary" shape="round" icon={<RobotOutlined />} onClick={handleAiDraft} loading={isDrafting} style={{ fontSize: 10 }}>MAGIC DRAFT</Button>
             </div>
-            <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
-              <Title level={4} style={{ fontSize: 18, marginBottom: 16 }}>{selectedRaw.title}</Title>
+            {(() => {
+                const p = parseJson(viewingRaw.data_json);
+                const url = p.source_url || "";
+                return (
+                  <div style={{ padding: '6px 16px', background: '#f0f9ff', borderBottom: '1px solid #bae6fd', display: 'flex', alignItems: 'center', gap: 8 }}>
+                     <GlobalOutlined style={{ color: '#0369a1', fontSize: 12 }} />
+                     <Text ellipsis style={{ fontSize: 10, color: '#0369a1', flex: 1 }}>{url}</Text>
+                     <Button type="link" size="small" href={url} target="_blank" style={{ fontSize: 10, height: 20, padding: 0 }}>Review Site</Button>
+                  </div>
+                );
+            })()}
+
+            <div style={{ flex: 1, overflowY: 'auto', padding: 24 }}>
+              <Title level={4} style={{ fontSize: 18, marginBottom: 20, fontWeight: 700, lineHeight: 1.4 }}>{viewingRaw.title}</Title>
               {(() => {
-                const p = parseJson(selectedRaw.data_json);
-                const imgs = [...(p.local_images?.map((im: string) => getRawImageUrl(selectedRaw.id, im)) || []), ...(p.image_urls || [])];
+                const p = parseJson(viewingRaw.data_json);
+                const imgs = [...(p.local_images?.map((im: string) => getRawImageUrl(viewingRaw.id, im)) || []), ...(p.image_urls || [])];
                 return (
                   <>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 4, marginBottom: 16 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, marginBottom: 24 }}>
                        {imgs.slice(0, 4).map((src: string, i: number) => (
-                         <div key={i} style={{ position: 'relative', cursor: 'copy' }} onClick={() => { navigator.clipboard.writeText(src); message.success('Img URL Copied'); }}>
-                           <img src={src} style={{ width: '100%', height: 80, objectFit: 'cover', borderRadius: 6 }} />
+                         <div key={i} style={{ position: 'relative', cursor: 'copy', borderRadius: 8, overflow: 'hidden', border: '1px solid #e2e8f0' }} onClick={() => { navigator.clipboard.writeText(src); message.success('Img URL Copied'); }}>
+                           <img src={src} style={{ width: '100%', height: 100, objectFit: 'cover' }} />
                          </div>
                        ))}
                     </div>
-                    <div style={{ whiteSpace: 'pre-wrap', fontSize: 13, lineHeight: 1.8, color: '#334155', background: '#f8fafc', padding: 16, borderRadius: 8 }}>
-                      {p.body || "No research text."}
+                    <div style={{ whiteSpace: 'pre-wrap', fontSize: 14, lineHeight: 1.8, color: '#334155', background: '#f8fafc', padding: 20, borderRadius: 12, border: '1px solid #f1f5f9' }}>
+                      {p.body || "No research text available for this item."}
                     </div>
-                    {p.source_url && (
-                      <div style={{ marginTop: 16 }}>
-                         <Button icon={<GlobalOutlined />} size="small" href={p.source_url} target="_blank">Review Original</Button>
-                      </div>
-                    )}
                   </>
                 );
               })()}
             </div>
-          </>
-        ) : <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Empty description="Select Article" /></div>}
+          </div>
+        ) : <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Empty description="Select Article to View" /></div>}
       </div>
       <div onMouseDown={() => { draggingRef.current = 'inspector'; document.body.style.cursor = 'col-resize'; }} style={{ width: 4, cursor: 'col-resize', zIndex: 100 }} />
 
@@ -332,7 +356,7 @@ const ContentStudio: React.FC = () => {
         {!previewCollapsed && (
           <div style={{ flex: 1, padding: 20, overflowY: 'auto' }}>
             {Object.keys(groups).map((group, idx) => (
-              <div key={group} style={{ background: fullTemplate?.colors?.primary || '#1e293b', color: fullTemplate?.colors?.text || '#fff', padding: 24, borderRadius: 16, marginBottom: 16, position: 'relative', overflow: 'hidden', minHeight: 220, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <div key={idx} style={{ background: fullTemplate?.colors?.primary || '#1e293b', color: fullTemplate?.colors?.text || '#fff', padding: 24, borderRadius: 16, marginBottom: 16, position: 'relative', overflow: 'hidden', minHeight: 220, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                 {(() => {
                   const img = groups[group].find(f => f.toUpperCase().includes('IMAGE'));
                   const src = img ? liveValues[img] : null;

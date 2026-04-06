@@ -7,7 +7,7 @@ Agent router — handles AI-powered content drafting.
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 
 from agent.generator import generate_draft
 from src.database import save_post
@@ -15,17 +15,21 @@ from src.database import save_post
 router = APIRouter()
 
 class DraftRequest(BaseModel):
-    raw_id: str
+    raw_id: Optional[str] = None
+    raw_ids: Optional[List[str]] = None
     template_id: str = "carousel_dark_1x1"
 
 @router.post("/draft")
 async def create_ai_draft(body: DraftRequest):
     """
-    Trigger AI drafting for a raw content item.
-    This is a synchronous call for now so the user gets the draft immediately.
+    Trigger AI drafting for one or more raw content items.
     """
+    target_ids = body.raw_ids if body.raw_ids else ([body.raw_id] if body.raw_id else [])
+    if not target_ids:
+        raise HTTPException(status_code=400, detail="No raw IDs provided.")
+
     try:
-        draft = generate_draft(body.raw_id, body.template_id)
+        draft = generate_draft(target_ids, body.template_id)
         if not draft:
             raise HTTPException(status_code=500, detail="AI generation failed. Check server logs.")
         

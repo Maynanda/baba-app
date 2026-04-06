@@ -6,7 +6,6 @@
  */
 
 import apiClient from './client';
-import type { Post } from '../types';
 
 interface DraftResponse {
   status: string;
@@ -23,10 +22,14 @@ interface DraftResponse {
 }
 
 /** POST /api/agent/draft — create an AI-powered content draft */
-export const createAiDraft = async (rawId: string, templateId: string = "carousel_dark_1x1") => {
-  const res = await apiClient.post<DraftResponse>('/agent/draft', {
-    raw_id: rawId,
-    template_id: templateId,
+export const createAiDraft = async (
+  rawIds: string | string[], 
+  templateId: string = "carousel_dark_1x1"
+): Promise<any> => {
+  const ids = Array.isArray(rawIds) ? rawIds : [rawIds];
+  const resp = await apiClient.post<DraftResponse>('/agent/draft', {
+    raw_ids: ids,
+    template_id: templateId
   });
-  return res.data.data; // Return the inner data object directly
+  return resp.data.data;
 };
