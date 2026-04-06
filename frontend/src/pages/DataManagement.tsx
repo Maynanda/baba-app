@@ -16,7 +16,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import {
-  Tabs, Typography, message, Table, Tag, Button,
+  Tabs, Typography, message, Table, Tag, Button, Space, Select
 } from 'antd';
 import { DatabaseOutlined, ReloadOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
@@ -32,6 +32,7 @@ import type { RawContent, Post, DiscoveredLink } from '../types';
 import RawDataTable from '../components/RawDataTable';
 
 const { Title, Text } = Typography;
+const { Option } = Select;
 
 // ── Status badge colors ───────────────────────────────────────────────────────
 const STATUS_COLOR: Record<string, string> = {
@@ -107,16 +108,76 @@ const DataManagement: React.FC = () => {
 
   // ── Posts table columns ────────────────────────────────────────────────────
   const postColumns: ColumnsType<Post> = [
-    { title: 'ID', dataIndex: 'id', key: 'id', ellipsis: true, width: 200 },
-    {
-      title: 'Status', dataIndex: 'status', key: 'status', width: 110,
-      render: (s: string) => <Tag color={STATUS_COLOR[s] ?? 'default'}>{s}</Tag>,
+    { 
+      title: 'Design & Title', 
+      key: 'content_name',
+      render: (_, r) => (
+        <Space direction="vertical" size={0}>
+          <Text strong style={{ color: '#1e293b' }}>{r.content_name || 'Untitled Post'}</Text>
+          <Text type="secondary" style={{ fontSize: 11 }}>{r.template} • {r.niche}</Text>
+        </Space>
+      )
     },
-    { title: 'Niche', dataIndex: 'niche', key: 'niche', width: 130 },
-    { title: 'Template', dataIndex: 'template', key: 'template', width: 160 },
     {
-      title: 'Updated', dataIndex: 'updated_at', key: 'updated_at', width: 170,
-      render: (v: string) => v ? new Date(v).toLocaleString() : '—',
+      title: 'Platform',
+      dataIndex: 'platforms',
+      key: 'platforms',
+      width: 140,
+      render: (p: string) => {
+        const list = Array.isArray(p) ? p : JSON.parse(p || '[]');
+        return (
+          <Space size={4} wrap>
+            {list.map((plat: string) => (
+              <Tag key={plat} color="blue" style={{ fontSize: 10, margin: 0 }}>{plat.toUpperCase()}</Tag>
+            ))}
+          </Space>
+        );
+      }
+    },
+    {
+      title: 'Status', 
+      dataIndex: 'status', 
+      key: 'status', 
+      width: 120,
+      render: (s: string, record) => (
+        <Select 
+          size="small" 
+          value={s} 
+          style={{ width: 100 }}
+          onChange={async (newStatus) => {
+            try {
+              // Note: We need a quick update API or reuse save_content_post
+              const updated = { ...record, status: newStatus };
+              const { save_content_post } = await import('../api/dataService');
+              // @ts-ignore
+              await save_content_post(updated);
+              message.success('Status updated');
+              loadPosts();
+            } catch {
+              message.error('Update failed');
+            }
+          }}
+        >
+          <Option value="draft">Draft</Option>
+          <Option value="ready">Ready</Option>
+          <Option value="published">Published</Option>
+          <Option value="archived">Archived</Option>
+        </Select>
+      ),
+    },
+    {
+      title: 'Editorial Notes',
+      dataIndex: 'remarks',
+      key: 'remarks',
+      ellipsis: true,
+      render: (v: string) => <Text type="secondary" style={{ fontSize: 12 }}>{v || '—'}</Text>
+    },
+    {
+      title: 'Updated', 
+      dataIndex: 'updated_at', 
+      key: 'updated_at', 
+      width: 140,
+      render: (v: string) => <Text type="secondary" style={{ fontSize: 11 }}>{v ? new Date(v).toLocaleDateString() : '—'}</Text>,
       sorter: (a, b) => new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime(),
       defaultSortOrder: 'descend',
     },

@@ -24,10 +24,13 @@ export interface RawContent {
 /** Content post — maps to `posts` table */
 export interface Post {
   id: string;
-  status: 'raw' | 'draft' | 'approved' | 'scheduled' | 'published' | 'archived';
+  content_name?: string;
+  status: 'raw' | 'draft' | 'approved' | 'scheduled' | 'published' | 'archived' | 'ready';
   niche: string;
   template: string;
   platforms: string;  // JSON string array e.g. '["linkedin","instagram_feed"]'
+  caption?: string;
+  remarks?: string;
   data_json: string;  // JSON string — parse for slide content
   created_at: string;
   updated_at: string;

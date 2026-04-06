@@ -36,16 +36,26 @@ def init_db(conn=None):
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS posts (
         id TEXT PRIMARY KEY,
+        content_name TEXT,
         status TEXT,
         niche TEXT,
         template TEXT,
         platforms TEXT,
         caption TEXT,
+        remarks TEXT,
         data_json TEXT,
         created_at TIMESTAMP,
         updated_at TIMESTAMP
     )
     """)
+    
+    # Check if columns exist (Migration)
+    try:
+        cursor.execute("ALTER TABLE posts ADD COLUMN content_name TEXT")
+    except: pass
+    try:
+        cursor.execute("ALTER TABLE posts ADD COLUMN remarks TEXT")
+    except: pass
     
     # Track deduplication for scraped URLs to not scrape things twice
     cursor.execute("""
@@ -145,24 +155,33 @@ def get_all_raw():
 def save_post(data: dict):
     conn = get_connection()
     c = conn.cursor()
+    
+    # Try to extract human-friendly name
+    c_name = data.get("content_name") or "Draft Post"
+    remarks = data.get("remarks", "")
+    
     c.execute("""
-        INSERT INTO posts (id, status, niche, template, platforms, caption, data_json, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO posts (id, content_name, status, niche, template, platforms, caption, remarks, data_json, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
+            content_name=excluded.content_name,
             status=excluded.status,
             niche=excluded.niche,
             template=excluded.template,
             platforms=excluded.platforms,
             caption=excluded.caption,
+            remarks=excluded.remarks,
             data_json=excluded.data_json,
             updated_at=excluded.updated_at
     """, (
         data.get("id"),
+        c_name,
         data.get("status", "draft"),
         data.get("niche", ""),
         data.get("template", ""),
-        json.dumps(data.get("platform", [])),
+        json.dumps(data.get("platforms", [])), # Standardized plural
         data.get("caption", ""),
+        remarks,
         json.dumps(data),
         datetime.now().isoformat(),
         datetime.now().isoformat()

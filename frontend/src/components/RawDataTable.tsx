@@ -71,11 +71,26 @@ const RawDataTable: React.FC<Props> = ({ data, loading, onDelete }) => {
       render: (text: string) => <Text strong style={{ color: '#1e293b' }}>{text}</Text>
     },
     {
+      title: 'Published',
+      key: 'published_at',
+      width: 150,
+      render: (_, record) => {
+        const p = safeParseJson(record.data_json);
+        const dateStr = p.published_date || p.date || p.scraped_at;
+        return <Text strong style={{ fontSize: 12, color: '#0f172a' }}>{dateStr ? new Date(dateStr).toLocaleDateString() : '—'}</Text>;
+      },
+      sorter: (a, b) => {
+        const d1 = safeParseJson(a.data_json).published_date || a.scraped_at;
+        const d2 = safeParseJson(b.data_json).published_date || b.scraped_at;
+        return new Date(d1).getTime() - new Date(d2).getTime();
+      },
+    },
+    {
       title: 'Scraped',
       dataIndex: 'scraped_at',
       key: 'scraped_at',
-      width: 150,
-      render: (val: string) => <Text type="secondary" style={{ fontSize: 12 }}>{val ? new Date(val).toLocaleDateString() : '—'}</Text>,
+      width: 140,
+      render: (val: string) => <Text type="secondary" style={{ fontSize: 11 }}>{val ? new Date(val).toLocaleDateString() : '—'}</Text>,
       sorter: (a, b) => new Date(a.scraped_at).getTime() - new Date(b.scraped_at).getTime(),
       defaultSortOrder: 'descend',
     },

@@ -103,13 +103,13 @@ def generate_draft(raw_ids: list[str], template_id: str = "carousel_dark_1x1") -
         aggregated_text += f"LINK: {data.get('source_url', 'N/A')}\n"
         aggregated_text += f"{data.get('body', '')[:3000]}\n"
         
-        # Collect images for AI selection
+        # Collect images for AI selection (using full URL for frontend preview)
         local_imgs = data.get("local_images", [])
         for img in local_imgs:
             visual_inventory.append({
                 "article_id": raw_id,
                 "filename": img,
-                "url": f"/api/data/image/{raw_id}/{img}"
+                "url": f"http://localhost:8000/api/data/image/{raw_id}/{img}"
             })
 
     if not articles:
@@ -133,6 +133,7 @@ def generate_draft(raw_ids: list[str], template_id: str = "carousel_dark_1x1") -
         placeholders = ["HOOK_TITLE", "HOOK_SUB", "BODY_1_TITLE", "BODY_1_TEXT", "CTA_TITLE", "CTA_TEXT"]
 
     # 3. Call Gemini
+    # We provide the base URL and the visual inventory to help Gemini pick correctly
     prompt = PROMPT_TEMPLATE.format(
         articles_text=aggregated_text,
         visual_inventory_text=visual_inventory_text,

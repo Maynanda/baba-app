@@ -40,6 +40,11 @@ export const deletePost = async (id: string): Promise<void> => {
   await apiClient.delete(`/data/content/${id}`);
 };
 
+/** POST /api/data/content — save or update a post */
+export const save_content_post = async (post: Partial<Post>): Promise<void> => {
+  await apiClient.post('/data/content', post);
+};
+
 /** Build the URL for a raw scraped image */
 export const getRawImageUrl = (rawId: string, filename: string): string => {
   if (!rawId || !filename) return '';

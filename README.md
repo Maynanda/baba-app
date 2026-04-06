@@ -106,9 +106,11 @@ Three tabs:
 **What it does:** A pro-grade authoring environment with built-in AI synthesis.
 
 #### Features
-- **Magic Draft (Gemini AI)**: Select one OR MORE research articles → AI merges the context into a single post.
-- **Smart Form Filling**: AI automatically generates the Hook, Body slides, CTA, and Caption.
-- **Visual Hero Mode**: Supports 9:16 mobile-first visual templates (`T-VISUAL-01`).
+- **Magic Draft (Gemini 1.5 Flash)**: Select one OR MORE research articles → AI merges the context into a single post.
+- **AI Brief Architecture**: Every template now has a "Persona" (Styling Mission), ensuring Gemini writes with the perfect tone for the chosen design.
+- **Visual Intelligence**: AI scans your research for charts/diagrams and automatically selects the best images for each slide.
+- **Interactive Visual Picker**: One-click mapping from the research inspector directly to your slide editor.
+- **7-Day Freshness Filter**: Automated cut-off in the scraper ensures only the latest tech news enters your pipeline.
 
 > ✅ Saved posts are flattened for 1:1 database mapping and are immediately available for visual generation.
 
