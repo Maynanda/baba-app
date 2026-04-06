@@ -16,7 +16,8 @@ import React from 'react';
 import {
   BrowserRouter as Router, Routes, Route, Link, useLocation,
 } from 'react-router-dom';
-import { Layout, Menu, Space } from 'antd';
+import { Layout, Menu, Space, Typography } from 'antd';
+const { Text } = Typography;
 import {
   DatabaseOutlined, CloudSyncOutlined,
   FormatPainterOutlined, EditOutlined, RobotOutlined, BookOutlined, SendOutlined,
@@ -89,22 +90,32 @@ const AppLayout: React.FC = () => {
           zIndex: 100,
           display: 'flex',
           alignItems: 'center',
-          padding: '0 32px',
+          padding: '0 24px',
           background: '#0f172a',
           height: 56,
-          boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+          boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+          borderBottom: '1px solid rgba(255,255,255,0.05)',
         }}
       >
-        {/* Brand */}
         <Space style={{ marginRight: 48, flexShrink: 0 }}>
-          <RobotOutlined style={{ color: '#38bdf8', fontSize: 20 }} />
+          <div style={{
+            background: '#38bdf8',
+            width: 32,
+            height: 32,
+            borderRadius: 8,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 0 15px rgba(56, 189, 248, 0.4)'
+          }}>
+            <RobotOutlined style={{ color: '#0f172a', fontSize: 18 }} />
+          </div>
           <div>
-            <div style={{ color: '#fff', fontSize: 13, fontWeight: 700, lineHeight: 1.2, letterSpacing: '0.025em' }}>BABA APP</div>
-            <div style={{ color: '#94a3b8', fontSize: 9, fontWeight: 500, letterSpacing: '0.05em' }}>CONTENT PIPELINE</div>
+            <div style={{ color: '#fff', fontSize: 14, fontWeight: 800, letterSpacing: '0.05em', lineHeight: 1.1 }}>BABA</div>
+            <div style={{ color: '#38bdf8', fontSize: 8, fontWeight: 700, letterSpacing: '0.1em' }}>STUDIO</div>
           </div>
         </Space>
 
-        {/* Navigation */}
         <Menu
           mode="horizontal"
           selectedKeys={[selectedKey]}
@@ -115,9 +126,14 @@ const AppLayout: React.FC = () => {
             background: 'transparent',
             border: 'none',
             fontSize: 13,
-            fontWeight: 500,
+            fontWeight: 600,
           }}
         />
+        
+        <Space style={{ marginLeft: 24 }}>
+           <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e' }} />
+           <Text style={{ color: '#94a3b8', fontSize: 11, fontWeight: 500 }}>PIPELINE ACTIVE</Text>
+        </Space>
       </Header>
 
       {/* ── Page Content ───────────────────────────────────────────────────── */}
