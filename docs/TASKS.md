@@ -30,5 +30,12 @@ Quick legend: ✅ Done · 🔜 Next · ⏳ In Progress · ❌ Not Started
 ### ✅ Phase 11: Template Expansion [DONE]
 - [x] **13+ Premium Templates**: All styles (Minimal, Myth, Chart, Playbook, Cyberpunk) are live.
 - [x] **AI Alignment**: Every template in the library is 100% "Magic Draft" compatible.
-- [x] **Multichannel Support**: 1:1, 4:5, and 9:16 templates all operational.
-- [x] **Bug Fixes**: CORS mapping, JSON serialization, and Image API all stabilized.
+
+### 🔜 Phase 12: GenAI SDK Migration [NEXT]
+- [ ] Transition from `google-generativeai` to the new `google-genai` SDK.
+- [ ] Hardening retry logic and safety block handling.
+
+### 🔜 Phase 13: Autonomous Design Orchestration [NEXT]
+- [ ] **AI-Generated Templates**: AI creates custom slide schemas based on content intent.
+- [ ] **Template Registration Factory**: Auto-save AI designs to `templates/` registry.
+- [ ] **Adaptive Placeholders**: AI-suggested custom fields for unique research topics.

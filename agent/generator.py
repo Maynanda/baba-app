@@ -14,10 +14,12 @@ Logic:
 
 import json
 import os
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from typing import Optional
 from datetime import datetime
 import logging
+import traceback
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -30,10 +32,10 @@ from src.database import get_raw_item
 from src.generator.base import load_template_metadata, BASE_DIR
 
 # Configure Gemini
-genai.configure(api_key=GEMINI_API_KEY)
+client = genai.Client(api_key=GEMINI_API_KEY)
 
-# Define the model — using gemini-flash-latest for stable performance
-MODEL_NAME = "gemini-flash-latest"
+# Define the model — using gemini-1.5-flash for stable performance
+MODEL_NAME = "gemini-1.5-flash"
 
 PROMPT_TEMPLATE = """
 You are an expert content creator specializing in AI Engineering and Data Science.
@@ -61,6 +63,7 @@ INSTRUCTIONS:
    - If no source image fits, describe a new, high-quality visualization prompt.
 5. Also, draft a highly engaging post caption for LinkedIn/Instagram. Use emojis and hashtags.
 6. MANDATORY: Include the source URLs in the caption for attribution.
+7. OPTIONAL: If you suspect a different structure would better convey the story, suggest it in the "suggested_schema" field.
 
 REQUIRED PLACEHOLDERS (STRICT - ONLY REALIZE THESE):
 {placeholders}
@@ -74,7 +77,12 @@ OUTPUT FORMAT (STRICT JSON ONLY):
       ...
   }},
   "caption": "Your LinkedIn/Insta post body text goes here...",
-  "platforms": ["linkedin", "instagram_feed"]
+  "remarks": "Any technical notes for the editor...",
+  "suggested_schema": {{
+      "optimal_slide_count": 7,
+      "best_visual_strategy": "Diagram-heavy comparison",
+      "reason": "Why this content is perfect for this design"
+  }}
 }}
 """
 
@@ -142,12 +150,12 @@ def generate_draft(raw_ids: list[str], template_id: str = "carousel_dark_1x1") -
         template_ai_instructions=template_metadata.get("ai_instructions", "Provide a clear summary of concepts.")
     )
 
+    logger.info(f"[agent] Calling {MODEL_NAME} for synthesis...")
     try:
-        logger.info(f"[agent] Calling {MODEL_NAME} for synthesis...")
-        model = genai.GenerativeModel(MODEL_NAME)
-        response = model.generate_content(
-            prompt,
-            generation_config=genai.GenerationConfig(
+        response = client.models.generate_content(
+            model=MODEL_NAME,
+            contents=prompt,
+            config=types.GenerateContentConfig(
                 response_mime_type="application/json",
             )
         )
@@ -157,6 +165,10 @@ def generate_draft(raw_ids: list[str], template_id: str = "carousel_dark_1x1") -
         except ValueError:
             # Handle blocked content / safety filters
             logger.error(f"[agent] Gemini response was blocked by safety filters. Candidates: {response.candidates}")
+            return None
+        except Exception as e:
+            logger.error(f"[agent] Unexpected error getting response text: {e}")
+            logger.error(traceback.format_exc())
             return None
             
         # Basic cleanup in case Gemini wrapped it in markdown code blocks
@@ -192,7 +204,7 @@ def generate_draft(raw_ids: list[str], template_id: str = "carousel_dark_1x1") -
         
         # Cross-reference selected filenames with inventory to get full URLs
         for key, val in slides_data.items():
-            if "_IMAGE" in key.upper():
+            if "_IMAGE" in key.upper() and val:
                 # Check if it was a source image selection
                 match = next((iv for iv in visual_inventory if iv["filename"] == str(val).strip()), None)
                 if match:
