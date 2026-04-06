@@ -16,6 +16,12 @@ import json
 import os
 import google.generativeai as genai
 from typing import Optional
+from datetime import datetime
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("agent")
 
 from config.settings import GEMINI_API_KEY
 from src.database import get_raw_item
@@ -26,8 +32,8 @@ from src.generator.base import load_template_metadata, BASE_DIR
 # Configure Gemini
 genai.configure(api_key=GEMINI_API_KEY)
 
-# Define the model — using gemini-1.5-flash for speed as requested
-MODEL_NAME = "gemini-1.5-flash"
+# Define the model — using gemini-flash-latest for stable performance
+MODEL_NAME = "gemini-flash-latest"
 
 PROMPT_TEMPLATE = """
 You are an expert content creator specializing in AI Engineering and Data Science.
@@ -94,17 +100,16 @@ def generate_draft(raw_ids: list[str], template_id: str = "carousel_dark_1x1") -
 
     # 2. Get template placeholders
     try:
-        from src.generator.base import get_template_path
-        pptx_path = get_template_path(template_id)
-        # Template config is usually "template.json" in the same folder as the pptx
-        tpl_json_path = pptx_path.parent / "template.json"
-        
-        with open(tpl_json_path, "r") as f:
-            template_json = json.load(f)
-        placeholders = template_json.get("placeholders", [])
+        from src.generator.base import load_template_metadata
+        template_metadata = load_template_metadata(template_id)
+        placeholders = template_metadata.get("placeholders", [])
+        if not placeholders:
+            # Fallback for old templates
+            placeholders = ["HOOK_TITLE", "HOOK_SUB", "BODY_1_TITLE", "BODY_1_TEXT", "CTA_TITLE", "CTA_TEXT"]
     except Exception as e:
-        print(f"[agent] Error loading template placeholders: {e}")
-        return None
+        print(f"[agent] Error loading template placeholders for '{template_id}': {e}")
+        # Fallback placeholders instead of failing
+        placeholders = ["HOOK_TITLE", "HOOK_SUB", "BODY_1_TITLE", "BODY_1_TEXT", "CTA_TITLE", "CTA_TEXT"]
 
     # 3. Call Gemini
     prompt = PROMPT_TEMPLATE.format(
@@ -113,6 +118,7 @@ def generate_draft(raw_ids: list[str], template_id: str = "carousel_dark_1x1") -
     )
 
     try:
+        logger.info(f"[agent] Calling {MODEL_NAME} for synthesis...")
         model = genai.GenerativeModel(MODEL_NAME)
         response = model.generate_content(
             prompt,
@@ -121,20 +127,36 @@ def generate_draft(raw_ids: list[str], template_id: str = "carousel_dark_1x1") -
             )
         )
         
-        result = json.loads(response.text)
+        if not response or not response.text:
+            logger.error("[agent] Empty response from Gemini.")
+            return None
+
+        result_data = json.loads(response.text)
         
-        # Metadata for DB
-        result["id"] = f"post_ai_{datetime.now().strftime('%Y%m%d%H%M%S')}"
-        result["status"] = "draft"
-        result["niche"] = articles[0].get("niche", "ai-engineering")
-        result["template"] = template_id
-        result["platforms"] = template_json.get("platforms", ["linkedin"])
-        result["raw_ref_ids"] = [a["id"] for a in articles] # track multiple refs
+        # Canonical structure for database 'posts' table
+        final_post = {
+            "id": f"post_ai_{datetime.now().strftime('%Y%m%d%H%M%S')}",
+            "status": "draft",
+            "niche": "AI Engineering",
+            "template": template_id,
+            "platforms": ["linkedin", "instagram_feed"],
+            "caption": result_data.get("caption", ""),
+            "content_name": result_data.get("content_name", "AI Draft"),
+            "slides": result_data.get("slides_data", {}), # Move slides_data to 'slides'
+            "raw_ref_ids": [a["id"] for a in articles],
+            "created_at": datetime.now().isoformat(),
+            "updated_at": datetime.now().isoformat()
+        }
         
-        return result
+        # Merge back any top-level keys from AI if they exist
+        for k, v in result_data.items():
+            if k not in final_post and k != "slides_data":
+                final_post[k] = v
+        
+        return final_post
         
     except Exception as e:
-        print(f"[agent] Gemini synthesis failed: {e}")
+        logger.error(f"[agent] Gemini synthesis failed: {e}")
         return None
 
 if __name__ == "__main__":
