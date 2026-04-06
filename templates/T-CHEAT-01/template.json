@@ -4,7 +4,9 @@
   "aspect_ratio": "4:5",
   "platforms": ["linkedin"],
   "niche": ["ai_engineering", "data_science"],
-  "description": "High content density layout. Optimized for deep reference material.",
+  "description": "High-density summary or actionable checklist for tutorials.",
+  "brief": "Visual Cheat Sheet - High information density guide.",
+  "ai_instructions": "Create an 'Actionable Checklist' or a 'Step-by-Step' guide. Transform article insights into short, bullet-point style titles for each CHEAT_ITEM.",
   "placeholders": ["TOP_DESC", "TIP_1", "TIP_1_BODY", "TIP_2", "TIP_2_BODY", "TIP_3", "TIP_3_BODY", "CTA"],
   "slides": [
     { "index": 0, "type": "hook" },

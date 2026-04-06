@@ -6,6 +6,8 @@
   "niche": ["ai-engineering", "data-science"],
   "status": "active",
   "description": "Full-screen background image with a high-impact title and hook at the bottom. Perfect for mobile-first engagement.",
+  "brief": "Mobile-first, high-impact background images for TikTok and Instagram Story.",
+  "ai_instructions": "The title must be a 'pattern interrupt' hook. The BODY_TEXT must be ONE SENTENCE MAX. Focus on visually cinematic image prompts for placeholders like HOOK_IMAGE and BODY_IMAGE.",
   "placeholders": [
     "HOOK_IMAGE",
     "HOOK_TITLE",

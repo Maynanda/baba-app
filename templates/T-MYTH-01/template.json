@@ -9,7 +9,9 @@
     "ai_engineering",
     "personal_brand"
   ],
-  "description": "Split-screen layout with contrasting colors. Optimized for truth-debunking content.",
+  "description": "Debunk common misconceptions in your niche.",
+  "brief": "Myth vs Reality - A contrast-based educational template.",
+  "ai_instructions": "Focus on common 'Mistakes' or 'Misunderstandings'. The HOOK should present the MYTH, and the BODY slides must show the REALITY based on your articles.",
   "placeholders": [
     "MYTH_TEXT",
     "REALITY_TEXT",

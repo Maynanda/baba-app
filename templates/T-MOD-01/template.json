@@ -9,7 +9,9 @@
     "ai_engineering",
     "data_science"
   ],
-  "description": "Sophisticated slate-gray background with professional typography.",
+  "description": "Contemporary business-look with slate gray and soft highlights.",
+  "brief": "Modern Slate - Quiet authority and corporate-pro aesthetic.",
+  "ai_instructions": "The tone is 'Professional Observer'. Use balanced arguments. Avoid slang. Focus on long-term implications of the tech news.",
   "placeholders": [
     "SLATE_TITLE",
     "SLATE_SUB",

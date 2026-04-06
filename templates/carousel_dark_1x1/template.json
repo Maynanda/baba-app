@@ -2,6 +2,8 @@
   "id": "carousel_dark_1x1",
   "name": "Dark Carousel",
   "description": "Dark theme carousel for LinkedIn and Instagram Feed. Teal/coral accent. 1:1 square.",
+  "brief": "A professional, high-trust technical carousel with multiple body slides for deep-dives.",
+  "ai_instructions": "Focus on step-by-step logic. Each BODY_X_TEXT should explain one key concept from the articles. The tone is informative but fast-paced.",
   "niche": ["ai-engineering", "data-science"],
   "platforms": ["linkedin", "instagram_feed"],
   "aspect_ratio": "1:1",

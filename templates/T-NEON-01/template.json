@@ -4,7 +4,9 @@
   "aspect_ratio": "9:16",
   "platforms": ["tiktok", "instagram_story"],
   "niche": ["ai_engineering", "futurism"],
-  "description": "High-contrast dark theme with neon pink/blue accents. Optimized for vertical storytelling and TikTok slideshows.",
+  "description": "Flashy, neon-accents for high-energy tech trends.",
+  "brief": "Cyberpunk AI - Energetic mobile story with focus on trend-led news.",
+  "ai_instructions": "Tone: Hype and Futuristic. Use 1-2 powerful emojis per slide. Make the titles extremely 'Catchy' to grab attention in a vertical feed.",
   "placeholders": ["STORY_HOOK", "BODY_1", "BODY_2", "LINK_IN_BIO"],
   "slides": [
     { "index": 0, "type": "hook" },

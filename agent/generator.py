@@ -44,6 +44,10 @@ SOURCE ARTICLES:
 {articles_text}
 ---
 
+TEMPLATE CONTEXT:
+Brief: {template_brief}
+Styling Mission: {template_ai_instructions}
+
 INSTRUCTIONS:
 1. Synthesize the most valuable insights from ALL provided sources.
 2. The tone should be "AI practitioner who explains it simply".
@@ -52,13 +56,12 @@ INSTRUCTIONS:
 5. Also, draft a highly engaging post caption for LinkedIn/Instagram. Use emojis and hashtags.
 6. MANDATORY: Include the source URLs in the caption for attribution.
 
-REQUIRED PLACEHOLDERS:
+REQUIRED PLACEHOLDERS (STRICT - ONLY REALIZE THESE):
 {placeholders}
 
 OUTPUT FORMAT (STRICT JSON ONLY):
 {{
   "content_name": "Short catchy name for this post",
-  "niche": "AI Engineering",
   "slides_data": {{
       "[PLACEHOLDER_NAME_1]": "Value for placeholder 1...",
       "[PLACEHOLDER_NAME_2]": "Value for placeholder 2...",
@@ -114,7 +117,9 @@ def generate_draft(raw_ids: list[str], template_id: str = "carousel_dark_1x1") -
     # 3. Call Gemini
     prompt = PROMPT_TEMPLATE.format(
         articles_text=aggregated_text,
-        placeholders=", ".join(placeholders)
+        placeholders=", ".join(placeholders),
+        template_brief=template_metadata.get("brief", "General technical carousel"),
+        template_ai_instructions=template_metadata.get("ai_instructions", "Provide a clear summary of concepts.")
     )
 
     try:
@@ -133,7 +138,7 @@ def generate_draft(raw_ids: list[str], template_id: str = "carousel_dark_1x1") -
 
         result_data = json.loads(response.text)
         
-        # Canonical structure for database 'posts' table
+        # Canonical structure for database 'posts' table and frontend
         final_post = {
             "id": f"post_ai_{datetime.now().strftime('%Y%m%d%H%M%S')}",
             "status": "draft",
@@ -142,7 +147,8 @@ def generate_draft(raw_ids: list[str], template_id: str = "carousel_dark_1x1") -
             "platforms": ["linkedin", "instagram_feed"],
             "caption": result_data.get("caption", ""),
             "content_name": result_data.get("content_name", "AI Draft"),
-            "slides": result_data.get("slides_data", {}), # Move slides_data to 'slides'
+            "slides_data": result_data.get("slides_data", {}), # For frontend ...res.slides_data
+            "slides": result_data.get("slides_data", {}),      # For DB saving logic
             "raw_ref_ids": [a["id"] for a in articles],
             "created_at": datetime.now().isoformat(),
             "updated_at": datetime.now().isoformat()

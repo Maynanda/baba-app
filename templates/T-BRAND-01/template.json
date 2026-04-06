@@ -4,7 +4,9 @@
   "aspect_ratio": "1:1",
   "platforms": ["linkedin", "instagram_feed"],
   "niche": ["personal_brand", "leadership"],
-  "description": "Bold square layout with large placeholder for user headshot and quote.",
+  "description": "Personal branding template with focus on high-quality portraits and quotes.",
+  "brief": "Authority Portrait - Personal thought leadership and opinion pieces.",
+  "ai_instructions": "The tone must be 'Executive' and 'Opinionated'. Use the articles as evidence to back up a strong personal brand statement.",
   "placeholders": ["QUOTE_TEXT", "AUTHOR_NAME", "JOB_TITLE", "AVATAR_IMG"],
   "slides": [
     { "index": 0, "type": "portrait" },

@@ -4,7 +4,9 @@
   "aspect_ratio": "4:5",
   "platforms": ["linkedin", "instagram_feed"],
   "niche": ["ai_engineering"],
-  "description": "Ultra-clean white background with bold black typography. High mobile readability.",
+  "description": "Clean, minimal white-theme carousel for deep-read articles.",
+  "brief": "The Minimalist White - High-end, clean, and spacious aesthetic.",
+  "ai_instructions": "Keep the text extremely clean and 'Boutique'. Avoid emojis in titles. Use sophisticated but simple language for the summaries.",
   "placeholders": ["HOOK_TITLE", "BODY_TITLE", "BODY_IMAGE", "CTA_TITLE"],
   "slides": [
     { "index": 0, "type": "hook" },

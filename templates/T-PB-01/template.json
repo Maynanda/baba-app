@@ -4,7 +4,9 @@
   "aspect_ratio": "4:5",
   "platforms": ["linkedin", "instagram_feed"],
   "niche": ["ai_engineering"],
-  "description": "Step-by-step workflow layout with progress bar. Ideal for 'How-to' content.",
+  "description": "5-step guide or technical workflow explanation.",
+  "brief": "Technical Playbook - Process-oriented, step-by-step tutorial.",
+  "ai_instructions": "Focus on 'Sequence'. Each slide must represent a numbered step in a technical workflow found in the articles.",
   "placeholders": ["HOOK_TITLE", "STEP_1_TITLE", "STEP_1_CMD", "STEP_2_TITLE", "STEP_2_CMD", "CTA_TITLE"],
   "slides": [
     { "index": 0, "type": "hook" },

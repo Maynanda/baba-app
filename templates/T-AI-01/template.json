@@ -4,7 +4,9 @@
   "aspect_ratio": "4:5",
   "platforms": ["linkedin"],
   "niche": ["ai_engineering", "systems_design"],
-  "description": "Blueprint-style aesthetics with dotted background. Optimized for architectural diagrams.",
+  "description": "Visualize complex AI workflows and system architectures.",
+  "brief": "AI System Architecture - Technical deep-dive for engineering diagrams.",
+  "ai_instructions": "Focus on 'How it works' and 'The Flow'. Describe technical diagrams for the DIAGRAM_IMAGE prompts based on the article summaries.",
   "placeholders": ["ARCH_TITLE", "ARCH_DESC", "COMPONENT_A", "COMPONENT_B", "COMPONENT_C"],
   "slides": [
     { "index": 0, "id": "architecture" },
