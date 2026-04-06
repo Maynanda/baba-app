@@ -167,17 +167,28 @@ const ContentStudio: React.FC = () => {
   const onSave = async () => {
     try {
       const vals = await form.validateFields();
-      const slides = (fullTemplate?.placeholders ?? []).reduce((acc: any, p: string) => { acc[p] = vals[p]; return acc; }, {});
-      await apiClient.post('/data/content', {
+      const slides = (fullTemplate?.placeholders ?? []).reduce((acc: any, p: string) => {
+        acc[p] = vals[p];
+        return acc;
+      }, {});
+
+      const payload = {
         id: `post_${Date.now()}`,
         status: 'ready',
         niche: vals.niche,
         template: vals.template,
-        data_json: JSON.stringify({ content_name: vals.content_name, platform: vals.platform, caption: vals.caption, slides }),
+        platform: vals.platform, // Backend uses .get('platform')
+        caption: vals.caption,
+        content_name: vals.content_name,
+        slides: slides,
         raw_ref_id: selectedRaw?.id,
-      });
-      message.success('Post Pipeline Updated!');
-    } catch { message.error('Validation Error'); }
+      };
+      await apiClient.post('/data/content', payload);
+      message.success('Content saved to pipeline!');
+    } catch (err) {
+      console.error('Save failed:', err);
+      message.error('Please fill required fields.');
+    }
   };
 
   const placeholders = fullTemplate?.placeholders ?? [];
@@ -249,10 +260,17 @@ const ContentStudio: React.FC = () => {
           <Form form={form} layout="vertical" onValuesChange={(_, all) => setLiveValues(all)}>
             <div style={{ maxWidth: 720 }}>
               <Row gutter={16}>
-                <Col span={8}><Form.Item name="content_name" label="Public ID" required><Input /></Form.Item></Col>
-                <Col span={8}><Form.Item name="niche" label="Focus Niche" required><NicheSelect value={form.getFieldValue('niche')} onChange={v => form.setFieldValue('niche', v)} /></Form.Item></Col>
-                <Col span={8}><Form.Item name="template" label="Template" required><Select onChange={handleTemplateSelection}>{templates.map(t => <Option key={t.id} value={t.id}>{t.name}</Option>)}</Select></Form.Item></Col>
+                <Col span={8}><Form.Item name="content_name" label="Project Title (Internal)" required><Input placeholder="e.g. AI Strategy Post" /></Form.Item></Col>
+                <Col span={8}><Form.Item name="niche" label="Niche" required><NicheSelect value={form.getFieldValue('niche')} onChange={v => form.setFieldValue('niche', v)} /></Form.Item></Col>
+                <Col span={8}><Form.Item name="template" label="Design Template" required><Select onChange={handleTemplateSelection}>{templates.map(t => <Option key={t.id} value={t.id}>{t.name}</Option>)}</Select></Form.Item></Col>
               </Row>
+              <Form.Item name="platform" label="Publishing Platforms" initialValue={['linkedin']}>
+                <Select mode="multiple">
+                  <Option value="linkedin">LinkedIn Carousel</Option>
+                  <Option value="instagram">Instagram Carousel</Option>
+                  <Option value="tiktok">TikTok Slides</Option>
+                </Select>
+              </Form.Item>
               <Divider />
               {Object.entries(groups).map(([group, fields]) => (
                 <div key={group} style={{ marginBottom: 32 }}>
