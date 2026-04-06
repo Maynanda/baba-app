@@ -13,7 +13,7 @@ import {
 } from '@ant-design/icons';
 import { 
   fetchFeeds, addFeed, deleteFeed, updateFeed,
-  fetchPortals, deletePortal, fetchScheduledJobs
+  fetchPortals, deletePortal, fetchScheduledJobs, triggerJob
 } from '../api/sourceService';
 import type { FeedEntry, PortalEntry, ScheduledJob } from '../api/sourceService';
 
@@ -93,6 +93,21 @@ const SourceManagement: React.FC = () => {
       loadAll();
     } catch (err) {
       message.error("Failed to remove source");
+    }
+  };
+
+  const handleTriggerJob = async (jobId: string) => {
+    setLoading(true);
+    try {
+      await triggerJob(jobId);
+      message.loading(`Triggering ${jobId}...`, 1.5).then(() => {
+        message.success("Task started in background");
+        loadAll();
+      });
+    } catch (err) {
+      message.error("Failed to trigger task");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -267,7 +282,20 @@ const SourceManagement: React.FC = () => {
               loading={loading}
               dataSource={jobs}
               renderItem={(item) => (
-                <List.Item style={{ padding: '12px 0' }}>
+                <List.Item 
+                  style={{ padding: '12px 0' }}
+                  actions={[
+                    <Button 
+                      key="run" 
+                      type="text" 
+                      size="small"
+                      onClick={() => handleTriggerJob(item.id)}
+                      icon={<ThunderboltOutlined style={{ color: '#faad14' }} />}
+                    >
+                      Run Now
+                    </Button>
+                  ]}
+                >
                   <Space direction="vertical" size={2} style={{ width: '100%' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
                       <Text strong style={{ fontSize: 13 }}>{item.id === 'rss_auto_scrape' ? '🔄 RSS Digester' : '🔭 Portal Discovery'}</Text>
@@ -276,7 +304,7 @@ const SourceManagement: React.FC = () => {
                     <Space size={4}>
                       <HistoryOutlined style={{ fontSize: 10, color: '#8c8c8c' }} />
                       <Text type="secondary" style={{ fontSize: 11 }}>
-                        Next: {item.next_run_time ? new Date(item.next_run_time).toLocaleString('en-US', { hour: 'numeric', minute: '2-digit' }) : 'Waiting...'}
+                        Next: {item.next_run_time && item.next_run_time !== 'None' ? new Date(item.next_run_time).toLocaleString('en-US', { hour: 'numeric', minute: '2-digit' }) : 'Running...'}
                       </Text>
                     </Space>
                   </Space>

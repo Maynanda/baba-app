@@ -9,6 +9,8 @@ import os
 import sys
 import hashlib
 import requests
+from PIL import Image
+from io import BytesIO
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -16,7 +18,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config.settings import DATA_RAW_DIR
 
 IMAGE_DIR = DATA_RAW_DIR / "images"
-IMAGE_DIR.mkdir(parents=True, exist_ok=True)
+VAULT_DIR = IMAGE_DIR / "_vault"  # Global unique images
+VAULT_DIR.mkdir(parents=True, exist_ok=True)
+
+# ... (HEADERS and constants remain same) ...
 
 HEADERS = {
     "User-Agent": (
@@ -30,48 +35,66 @@ HEADERS = {
 }
 ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
 TIMEOUT = 10
-
+MIN_SIZE_BYTES = 5000  # 5KB — ignore small icons/pixels
 
 def _get_extension(url: str) -> str:
-    """Extract file extension from URL."""
     path = urlparse(url).path
     ext = os.path.splitext(path)[-1].lower()
     return ext if ext in ALLOWED_EXTENSIONS else ".jpg"
 
-
 def download_image(url: str, post_id: str) -> str | None:
     """
-    Download a single image and save it under data/raw/images/<post_id>/.
-    Returns the saved file path, or None on failure.
+    Download a single image, validate with PIL, and deduplicate using content hash.
+    Saves to data/raw/images/_vault/ for uniqueness.
+    Returns the final absolute filepath.
     """
-    post_img_dir = IMAGE_DIR / post_id
-    post_img_dir.mkdir(parents=True, exist_ok=True)
-
-    # Use URL hash as filename to avoid collisions
-    url_hash = hashlib.md5(url.encode()).hexdigest()[:10]
-    ext = _get_extension(url)
-    filename = f"{url_hash}{ext}"
-    filepath = post_img_dir / filename
-
-    if filepath.exists():
-        return str(filepath)
+    post_img_cache_dir = IMAGE_DIR / post_id
+    post_img_cache_dir.mkdir(parents=True, exist_ok=True)
 
     try:
-        resp = requests.get(url, headers=HEADERS, timeout=TIMEOUT, stream=True)
+        resp = requests.get(url, headers=HEADERS, timeout=TIMEOUT)
         resp.raise_for_status()
+        content = resp.content
 
-        # Basic content-type guard
-        content_type = resp.headers.get("Content-Type", "")
-        if not content_type.startswith("image/"):
-            print(f"  [image_scraper] Skipping non-image content: {url}")
+        # 1. Size Check
+        if len(content) < MIN_SIZE_BYTES:
+            print(f"  [image_scraper] Skipping small image ({len(content)} bytes): {url}")
             return None
 
-        with open(filepath, "wb") as f:
-            for chunk in resp.iter_content(chunk_size=8192):
-                f.write(chunk)
+        # 2. Content Fingerprint (MD5)
+        content_hash = hashlib.md5(content).hexdigest()
+        ext = _get_extension(url)
+        vault_filename = f"{content_hash}{ext}"
+        vault_path = VAULT_DIR / vault_filename
 
-        print(f"  [image_scraper] Downloaded → {filepath}")
-        return str(filepath)
+        # If already in vault, skip re-validation and just use it
+        if vault_path.exists():
+            # Link/Copy to post folder for local tracking
+            target_path = post_img_cache_dir / vault_filename
+            if not target_path.exists():
+                with open(target_path, "wb") as f:
+                    f.write(content)
+            return str(target_path)
+
+        # 3. Breadth/Broken Validation (PILLOW)
+        try:
+            img = Image.open(BytesIO(content))
+            img.verify() # Ensure not corrupted
+        except Exception as img_err:
+            print(f"  [image_scraper] Corrupted image detected: {url} -> {img_err}")
+            return None
+
+        # 4. Save to Vault (Global Uniqueness)
+        with open(vault_path, "wb") as f:
+            f.write(content)
+
+        # 5. Save to Post folder (Local access)
+        target_path = post_img_cache_dir / vault_filename
+        with open(target_path, "wb") as f:
+            f.write(content)
+
+        print(f"  [image_scraper] Downloaded & Verified → {vault_path.name}")
+        return str(target_path)
 
     except Exception as e:
         print(f"  [image_scraper] Failed to download {url}: {e}")

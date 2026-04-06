@@ -52,3 +52,7 @@ export const fetchScheduledJobs = async (): Promise<ScheduledJob[]> => {
   const resp = await apiClient.get('/scheduler/jobs');
   return resp.data;
 };
+
+export const triggerJob = async (jobId: string): Promise<void> => {
+  await apiClient.post(`/scheduler/trigger/${jobId}`);
+};

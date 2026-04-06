@@ -70,6 +70,15 @@ def get_scheduled_jobs():
         })
     return jobs
 
+@app.post("/api/scheduler/trigger/{job_id}", tags=["Scheduler"])
+def trigger_job(job_id: str):
+    job = scheduler.get_job(job_id)
+    if not job:
+        return {"error": "Job not found"}
+    # Force run now by updating next_run_time to now
+    job.modify(next_run_time=datetime.now())
+    return {"status": "Job triggered successfully", "job": job_id}
+
 
 if __name__ == "__main__":
     uvicorn.run("main_api:app", host="0.0.0.0", port=8000, reload=True)
