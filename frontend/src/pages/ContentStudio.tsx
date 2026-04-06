@@ -1,11 +1,12 @@
 /**
  * pages/ContentStudio.tsx
  * ─────────────────────────────────────────────────────────────────────────────
- * THE ULTIMATE WORKSPACE (Refined & Rock Solid Resizing)
+ * THE ULTIMATE WORKSPACE (Deep-Linking & Auto-Drafting Implementation)
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
 import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Select, Button, Form, Input, Typography,
   Space, message, Tag, Divider, Spin, Empty, Row, Col,
@@ -13,7 +14,7 @@ import {
 import {
   EditOutlined, SaveOutlined, EyeOutlined, RobotOutlined,
   MenuFoldOutlined, MenuUnfoldOutlined, RightOutlined, LeftOutlined,
-  PictureOutlined, CopyOutlined,
+  PictureOutlined, CopyOutlined, GlobalOutlined
 } from '@ant-design/icons';
 import apiClient from '../api/client';
 import {
@@ -94,6 +95,9 @@ const SourceBrowser: React.FC<{
 
 const ContentStudio: React.FC = () => {
   const [form] = Form.useForm();
+  const [searchParams] = useSearchParams();
+  const rawIdFromUrl = searchParams.get('rawId');
+
   const [rawItems, setRawItems] = useState<RawContent[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [selectedRaw, setSelectedRaw] = useState<RawContent | null>(null);
@@ -110,6 +114,7 @@ const ContentStudio: React.FC = () => {
   const [previewCollapsed, setPreviewCollapsed] = useState(false);
 
   const draggingRef = useRef<string | null>(null);
+  const hasAutoDrafted = useRef(false);
 
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
@@ -124,28 +129,7 @@ const ContentStudio: React.FC = () => {
     return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
   }, [listWidth, inspectorWidth, listCollapsed]);
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [r, t] = await Promise.all([fetchRawData(), fetchTemplates()]);
-      setRawItems(r);
-      setTemplates(t);
-      if (t.length > 0) handleTemplateSelection(t[0].id);
-    } catch { message.error('Data loading error'); }
-    finally { setLoading(false); }
-  }, []);
-
-  useEffect(() => { loadData(); }, [loadData]);
-
-  const handleTemplateSelection = async (tplId: string) => {
-    try {
-      const detail = await fetchTemplate(tplId);
-      setFullTemplate(detail);
-      form.setFieldValue('template', tplId);
-    } catch { message.error('Template detail error'); }
-  };
-
-  const onAiDraft = async (rawId: string) => {
+  const onAiDraft = useCallback(async (rawId: string) => {
     const tplId = form.getFieldValue('template');
     if (!tplId) return message.warning('Pick a template first.');
     setIsDrafting(true);
@@ -154,7 +138,7 @@ const ContentStudio: React.FC = () => {
       form.setFieldsValue({
         content_name: res.content_name || 'Draft Post',
         niche: res.niche,
-        platform: res.platforms,
+        platform: res.platforms || ['linkedin'],
         caption: res.caption,
         ...res.slides_data,
       });
@@ -162,7 +146,45 @@ const ContentStudio: React.FC = () => {
       message.success('Draft Generated!');
     } catch { message.error('Draft Error'); }
     finally { setIsDrafting(false); }
-  };
+  }, [form]);
+
+  const handleTemplateSelection = useCallback(async (tplId: string) => {
+    try {
+      const detail = await fetchTemplate(tplId);
+      setFullTemplate(detail);
+      form.setFieldValue('template', tplId);
+    } catch { message.error('Template detail error'); }
+  }, [form]);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [r, t] = await Promise.all([fetchRawData(), fetchTemplates()]);
+      setRawItems(r);
+      setTemplates(t);
+      
+      let initialTemplateId = t[0]?.id;
+      if (initialTemplateId) {
+        await handleTemplateSelection(initialTemplateId);
+      }
+
+      // Deep Link Logic
+      if (rawIdFromUrl && !hasAutoDrafted.current) {
+        const item = r.find(it => it.id === rawIdFromUrl);
+        if (item) {
+          setSelectedRaw(item);
+          // Small delay to ensure the template detail is loaded
+          setTimeout(() => {
+             onAiDraft(item.id);
+             hasAutoDrafted.current = true;
+          }, 1000);
+        }
+      }
+    } catch { message.error('Data loading error'); }
+    finally { setLoading(false); }
+  }, [rawIdFromUrl, handleTemplateSelection, onAiDraft]);
+
+  useEffect(() => { loadData(); }, [loadData]);
 
   const onSave = async () => {
     try {
@@ -177,7 +199,7 @@ const ContentStudio: React.FC = () => {
         status: 'ready',
         niche: vals.niche,
         template: vals.template,
-        platform: vals.platform, // Backend uses .get('platform')
+        platform: vals.platform,
         caption: vals.caption,
         content_name: vals.content_name,
         slides: slides,
@@ -241,6 +263,11 @@ const ContentStudio: React.FC = () => {
                     <div style={{ whiteSpace: 'pre-wrap', fontSize: 13, lineHeight: 1.8, color: '#334155', background: '#f8fafc', padding: 16, borderRadius: 8 }}>
                       {p.body || "No research text."}
                     </div>
+                    {p.source_url && (
+                      <div style={{ marginTop: 16 }}>
+                         <Button icon={<GlobalOutlined />} size="small" href={p.source_url} target="_blank">Review Original</Button>
+                      </div>
+                    )}
                   </>
                 );
               })()}
@@ -274,7 +301,10 @@ const ContentStudio: React.FC = () => {
               <Divider />
               {Object.entries(groups).map(([group, fields]) => (
                 <div key={group} style={{ marginBottom: 32 }}>
-                  <Text strong style={{ fontSize: 10, color: '#64748b', textTransform: 'uppercase' }}>Section: {group}</Text>
+                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                      <Tag color="blue" style={{ borderRadius: 4 }}>SECTION: {group}</Tag>
+                      <Divider style={{ flex: 1, margin: 0 }} />
+                   </div>
                   {fields.map(field => {
                     const isImg = field.toUpperCase().includes('IMAGE');
                     return (

@@ -173,7 +173,8 @@ const DataManagement: React.FC = () => {
             loading={postsLoading}
             size="small"
             pagination={{ pageSize: 15, showTotal: (t) => `${t} posts` }}
-            scroll={{ x: 800 }}
+            scroll={{ x: 'max-content' }}
+            style={{ width: '100%' }}
           />
         </>
       ),
@@ -193,7 +194,8 @@ const DataManagement: React.FC = () => {
             loading={discLoading}
             size="small"
             pagination={{ pageSize: 15, showTotal: (t) => `${t} links` }}
-            scroll={{ x: 900 }}
+            scroll={{ x: 'max-content' }}
+            style={{ width: '100%' }}
           />
         </>
       ),
@@ -201,22 +203,29 @@ const DataManagement: React.FC = () => {
   ];
 
   return (
-    <div>
-      <Title level={2}>
-        <DatabaseOutlined style={{ marginRight: 8 }} />
-        Data Management
-      </Title>
-      <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
-        All data is read from the SQLite database via the FastAPI backend.
-      </Text>
-      <Tabs
-        defaultActiveKey="raw"
-        items={tabs}
-        onChange={(key) => {
-          if (key === 'content' && postsData.length === 0) loadPosts();
-          if (key === 'discovered' && discovered.length === 0) loadDiscovered();
-        }}
-      />
+    <div style={{ padding: '0', maxWidth: '100%', margin: '0' }}>
+      <div style={{ padding: '24px 32px 0 32px', marginBottom: 32 }}>
+        <Title level={2} style={{ margin: 0, color: '#0f172a', fontWeight: 800, letterSpacing: '-0.02em' }}>
+          <DatabaseOutlined style={{ marginRight: 12, color: '#38bdf8' }} />
+          Data Intelligence
+        </Title>
+        <Text style={{ color: '#64748b', fontSize: 14 }}>
+          Manage your research, pipeline, and discovered opportunities from a single command center.
+        </Text>
+      </div>
+      
+      <div style={{ padding: '0 32px 32px 32px' }}>
+        <Tabs
+          defaultActiveKey="raw"
+          items={tabs}
+          className="premium-tabs"
+          onChange={(key) => {
+            if (key === 'content' && postsData.length === 0) loadPosts();
+            if (key === 'discovered' && discovered.length === 0) loadDiscovered();
+          }}
+          style={{ background: 'transparent' }}
+        />
+      </div>
     </div>
   );
 };
