@@ -152,12 +152,22 @@ def generate_draft(raw_ids: list[str], template_id: str = "carousel_dark_1x1") -
             )
         )
         
-        raw_response_text = response.text
+        try:
+            raw_response_text = response.text
+        except ValueError:
+            # Handle blocked content / safety filters
+            logger.error(f"[agent] Gemini response was blocked by safety filters. Candidates: {response.candidates}")
+            return None
+            
         # Basic cleanup in case Gemini wrapped it in markdown code blocks
         if raw_response_text.startswith("```json"):
             raw_response_text = raw_response_text.strip("```json").strip("```").strip()
             
-        decoded_json = json.loads(raw_response_text)
+        try:
+            decoded_json = json.loads(raw_response_text)
+        except json.JSONDecodeError:
+            logger.error(f"[agent] Failed to parse JSON from Gemini: {raw_response_text}")
+            return None
         
         # Ensure we have a dict
         if isinstance(decoded_json, list) and len(decoded_json) > 0:
@@ -169,7 +179,16 @@ def generate_draft(raw_ids: list[str], template_id: str = "carousel_dark_1x1") -
             return None
         
         # 4. Final Processing (Mapping Images)
-        slides_data = result_data.get("slides_data", {})
+        raw_slides = result_data.get("slides_data", {})
+        
+        # Coerce list to dict if Gemini returned a list of slide objects
+        slides_data = {}
+        if isinstance(raw_slides, list):
+            for item in raw_slides:
+                if isinstance(item, dict):
+                    slides_data.update(item)
+        elif isinstance(raw_slides, dict):
+            slides_data = raw_slides
         
         # Cross-reference selected filenames with inventory to get full URLs
         for key, val in slides_data.items():
