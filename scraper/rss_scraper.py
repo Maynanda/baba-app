@@ -105,8 +105,8 @@ def scrape_feed(feed_url: str, feed_name: str = "Unknown", niche: str = DEFAULT_
         if len(body) < 600 or not image_urls:
             print(f"  [rss_scraper] Snippet too short or no images. Deep scraping: {url}")
             from scraper.blog_scraper import scrape_article
-            # We use scrape_article but skip its DB save because we'll do it here
-            deep_data = scrape_article(url, niche=niche, download_imgs=True, use_stealth=False)
+            # We use scrape_article with save_to_db=False to get content without duplicates
+            deep_data = scrape_article(url, niche=niche, download_imgs=True, use_stealth=False, save_to_db=False)
             if deep_data:
                 body = deep_data.get("body", body)
                 image_urls = deep_data.get("image_urls", image_urls)
