@@ -287,19 +287,23 @@ const VisualGenerator: React.FC = () => {
     doRefreshImages(selectedPost, false);
   };
 
-  // ── Derived ───────────────────────────────────────────────────────────────
-
+  const [nicheFilter, setNicheFilter] = useState<string | undefined>();
+  
   const selectedPostData = posts.find(p => p.id === selectedPost);
 
-  // Parse content_name from data_json for the dropdown labels
-  const postOptions = posts.map(p => {
+  // Filter posts by niche
+  const filteredPosts = posts.filter(p => !nicheFilter || p.niche === nicheFilter);
+
+  const postOptions = filteredPosts.map(p => {
     let name = p.id;
     try {
       const d = JSON.parse(p.data_json ?? '{}');
-      if (d.content_name) name = `${d.content_name} (${p.id.slice(0, 14)}…)`;
+      if (d.content_name) name = `${d.content_name}`;
     } catch { /* keep id */ }
-    return { value: p.id, label: name, status: p.status };
+    return { value: p.id, label: name, status: p.status, niche: p.niche };
   });
+
+  const NICHE_LIST = Array.from(new Set(posts.map(p => p.niche).filter(Boolean)));
 
   return (
     <div style={{ width: '100%' }}>
@@ -339,6 +343,18 @@ const VisualGenerator: React.FC = () => {
               />
             )}
 
+            <div style={{ marginBottom: 12 }}>
+              <Text style={{ fontSize: 11, display: 'block', marginBottom: 4 }} type="secondary">Filter by Niche</Text>
+              <Select
+                placeholder="All Niches"
+                style={{ width: '100%' }}
+                allowClear
+                value={nicheFilter}
+                onChange={v => { setNicheFilter(v); setSelectedPost(undefined); }}
+                options={NICHE_LIST.map(n => ({ label: n, value: n }))}
+              />
+            </div>
+
             <div style={{ marginBottom: 10 }}>
               <Text style={{ fontSize: 12, display: 'block', marginBottom: 4 }} strong>Post</Text>
               <Select
@@ -352,13 +368,16 @@ const VisualGenerator: React.FC = () => {
                   (opt?.label as string ?? '').toLowerCase().includes(input.toLowerCase())
                 }
                 optionRender={opt => (
-                  <Space>
-                    <span style={{
-                      width: 8, height: 8, borderRadius: '50%', display: 'inline-block',
-                      background: STATUS_COLORS[(opt.data as any)?.status] ?? '#999',
-                    }} />
-                    <span style={{ fontSize: 12 }}>{opt.label}</span>
-                  </Space>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                    <Space>
+                      <span style={{
+                        width: 8, height: 8, borderRadius: '50%',
+                        background: STATUS_COLORS[(opt.data as any)?.status] ?? '#999',
+                      }} />
+                      <span style={{ fontSize: 12 }}>{opt.label}</span>
+                    </Space>
+                    <Tag style={{ fontSize: 9, margin: 0 }}>{(opt.data as any)?.niche}</Tag>
+                  </div>
                 )}
                 options={postOptions}
               />

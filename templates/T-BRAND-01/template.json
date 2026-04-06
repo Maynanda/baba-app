@@ -1,0 +1,20 @@
+{
+  "id": "T-BRAND-01",
+  "name": "Authority Portrait",
+  "aspect_ratio": "1:1",
+  "platforms": ["linkedin", "instagram_feed"],
+  "niche": ["personal_brand", "leadership"],
+  "description": "Bold square layout with large placeholder for user headshot and quote.",
+  "placeholders": ["QUOTE_TEXT", "AUTHOR_NAME", "JOB_TITLE", "AVATAR_IMG"],
+  "slides": [
+    { "index": 0, "type": "portrait" },
+    { "index": 1, "type": "cta" }
+  ],
+  "colors": {
+    "primary": "#f3f4f6",
+    "secondary": "#ffffff",
+    "text": "#111827",
+    "accent": "#4f46e5"
+  },
+  "status": "draft"
+}

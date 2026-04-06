@@ -1,0 +1,21 @@
+{
+  "id": "T-CHART-01",
+  "name": "Data Digest (Chart Focus)",
+  "aspect_ratio": "4:5",
+  "platforms": ["linkedin", "instagram_feed"],
+  "niche": ["data_science"],
+  "description": "Clean white layout with background grid. Optimized for data visualizations.",
+  "placeholders": ["TITLE", "METRIC_1", "METRIC_1_VAL", "METRIC_2", "METRIC_2_VAL", "LEGEND_TEXT"],
+  "slides": [
+    { "index": 0, "type": "hook" },
+    { "index": 1, "type": "chart" },
+    { "index": 2, "type": "stats" }
+  ],
+  "colors": {
+    "primary": "#ffffff",
+    "secondary": "#f0f4f8",
+    "text": "#111827",
+    "accent": "#ef4444"
+  },
+  "status": "draft"
+}

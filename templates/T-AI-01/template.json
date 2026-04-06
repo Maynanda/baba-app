@@ -1,0 +1,21 @@
+{
+  "id": "T-AI-01",
+  "name": "AI System Architecture",
+  "aspect_ratio": "4:5",
+  "platforms": ["linkedin"],
+  "niche": ["ai_engineering", "systems_design"],
+  "description": "Blueprint-style aesthetics with dotted background. Optimized for architectural diagrams.",
+  "placeholders": ["ARCH_TITLE", "ARCH_DESC", "COMPONENT_A", "COMPONENT_B", "COMPONENT_C"],
+  "slides": [
+    { "index": 0, "id": "architecture" },
+    { "index": 1, "id": "components" },
+    { "index": 2, "id": "cta" }
+  ],
+  "colors": {
+    "primary": "#f8fafc",
+    "secondary": "#ffffff",
+    "text": "#0f172a",
+    "accent": "#0ea5e9"
+  },
+  "status": "draft"
+}

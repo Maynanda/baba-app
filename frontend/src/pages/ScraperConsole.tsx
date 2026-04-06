@@ -13,11 +13,12 @@
 import React, { useState } from 'react';
 import {
   Card, Col, Row, Button, Form, Input, Select, Switch,
-  Typography, Space, message, Divider,
+  Typography, Space, message, Tag,
 } from 'antd';
 import {
   CloudSyncOutlined, LinkOutlined, FireOutlined,
-  GlobalOutlined, SearchOutlined,
+  GlobalOutlined, SearchOutlined, PlusOutlined,
+  ReloadOutlined,
 } from '@ant-design/icons';
 import {
   triggerRssScrape,
@@ -30,6 +31,31 @@ import {
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
 
+const NICHE_OPTIONS = [
+  { label: 'AI Engineering', value: 'ai-engineering' },
+  { label: 'Data Science', value: 'data-science' },
+  { label: 'Personal Brand', value: 'personal-brand' },
+  { label: 'Digital Marketing', value: 'digital-marketing' },
+  { label: 'Business AI', value: 'business-ai' },
+];
+
+const NicheSelect: React.FC<{ value?: string; onChange: (v: string) => void; style?: React.CSSProperties }> = ({ value, onChange, style }) => {
+  return (
+    <Select
+      mode="tags"
+      placeholder="Select or type niche"
+      value={value ? [value] : []}
+      onChange={(vals) => {
+        const val = vals[vals.length - 1]; // Get last entered
+        onChange(val);
+      }}
+      style={{ width: 220, ...style }}
+      maxCount={1}
+      options={NICHE_OPTIONS}
+    />
+  );
+};
+
 // ── Sub-components (one per scraper card) ─────────────────────────────────────
 
 const RssCard: React.FC = () => {
@@ -40,9 +66,9 @@ const RssCard: React.FC = () => {
     setLoading(true);
     try {
       await triggerRssScrape(niche);
-      message.success('RSS scrape started in background. Check Data → Raw tab in a few seconds.');
+      message.success('RSS scrape started in background. Check Data → Raw tab soon.');
     } catch {
-      message.error('Failed to start RSS scrape. Is the API running?');
+      message.error('Failed to start RSS scrape.');
     } finally {
       setLoading(false);
     }
@@ -51,27 +77,15 @@ const RssCard: React.FC = () => {
   return (
     <Card title={<><CloudSyncOutlined /> RSS Feed Scraper</>} size="small">
       <Paragraph type="secondary" style={{ fontSize: 12 }}>
-        Reads all feeds from <code>config/feeds.yaml</code> and saves new articles
-        to the raw database. Skips duplicates automatically.
+        Reads all feeds from <code>config/feeds.yaml</code> and saves new articles.
       </Paragraph>
       <Space>
-        <Select
-          placeholder="Filter by niche (optional)"
-          allowClear
-          style={{ width: 220 }}
-          onChange={setNiche}
-        >
-          <Option value="ai-engineering">AI Engineering</Option>
-          <Option value="data-science">Data Science</Option>
-        </Select>
-        <Button type="primary" onClick={run} loading={loading}>
-          Run RSS Scrape
-        </Button>
+        <NicheSelect value={niche} onChange={setNiche} />
+        <Button type="primary" onClick={run} loading={loading}>Run RSS Scrape</Button>
       </Space>
     </Card>
   );
 };
-
 
 const UrlCard: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -84,9 +98,8 @@ const UrlCard: React.FC = () => {
       await triggerUrlScrape(values.url, values.niche, values.use_stealth);
       message.success('URL scrape started in background.');
       form.resetFields(['url']);
-    } catch (err: any) {
-      if (err?.errorFields) return; // Ant Design validation error — already shown
-      message.error('Failed to start URL scrape. Is the API running?');
+    } catch {
+      message.error('Failed to start URL scrape.');
     } finally {
       setLoading(false);
     }
@@ -95,45 +108,38 @@ const UrlCard: React.FC = () => {
   return (
     <Card title={<><LinkOutlined /> Single URL Deep Scrape</>} size="small">
       <Paragraph type="secondary" style={{ fontSize: 12 }}>
-        Deep-scrapes a single article URL using Scrapling. Enable Stealth Mode
-        to bypass anti-bot protections with patchright.
+        Deep-scrapes a single article URL. Enable Stealth Mode for anti-bot.
       </Paragraph>
       <Form form={form} layout="vertical" initialValues={{ niche: 'ai-engineering', use_stealth: false }}>
-        <Form.Item name="url" label="Article URL" rules={[{ required: true, type: 'url', message: 'Enter a valid URL' }]}>
+        <Form.Item name="url" label="Article URL" rules={[{ required: true, type: 'url' }]}>
           <Input placeholder="https://example.com/some-article" />
         </Form.Item>
-        <Space wrap>
+        <Space wrap align="end">
           <Form.Item name="niche" label="Niche" style={{ marginBottom: 0 }}>
-            <Select style={{ width: 180 }}>
-              <Option value="ai-engineering">AI Engineering</Option>
-              <Option value="data-science">Data Science</Option>
-            </Select>
+             <Select showSearch allowClear style={{ width: 180 }} options={NICHE_OPTIONS} />
           </Form.Item>
           <Form.Item name="use_stealth" label="Stealth Mode" valuePropName="checked" style={{ marginBottom: 0 }}>
             <Switch />
           </Form.Item>
+          <Button type="primary" onClick={run} loading={loading}>Run URL Scrape</Button>
         </Space>
-        <Divider style={{ margin: '12px 0' }} />
-        <Button type="primary" onClick={run} loading={loading}>
-          Run URL Scrape
-        </Button>
       </Form>
     </Card>
   );
 };
 
-
 const TrendsCard: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [source, setSource] = useState<'google' | 'reddit' | 'all'>('all');
+  const [niche, setNiche] = useState<string>('ai-engineering');
 
   const run = async () => {
     setLoading(true);
     try {
-      await triggerTrendsScrape(source);
-      message.success(`Trends scrape (${source}) started in background.`);
+      await triggerTrendsScrape(source, niche);
+      message.success(`Trends scrape (${source}) started with niche: ${niche}`);
     } catch {
-      message.error('Failed to start trends scrape. Reddit credentials may be missing.');
+      message.error('Failed to start trends scrape.');
     } finally {
       setLoading(false);
     }
@@ -142,35 +148,33 @@ const TrendsCard: React.FC = () => {
   return (
     <Card title={<><FireOutlined /> Trends Scraper (Google + Reddit)</>} size="small">
       <Paragraph type="secondary" style={{ fontSize: 12 }}>
-        Fetches rising Google Trends and top Reddit posts from AI/DS subreddits.
-        Reddit requires credentials in <code>config/.env</code>.
+        Fetches rising Google Trends and top Reddit posts from subreddits.
       </Paragraph>
-      <Space>
-        <Select value={source} onChange={setSource} style={{ width: 150 }}>
+      <Space wrap>
+        <Select value={source} onChange={setSource} style={{ width: 120 }}>
           <Option value="all">All Sources</Option>
           <Option value="google">Google Only</Option>
           <Option value="reddit">Reddit Only</Option>
         </Select>
-        <Button type="primary" onClick={run} loading={loading}>
-          Run Trends Scrape
-        </Button>
+        <NicheSelect value={niche} onChange={setNiche} style={{ width: 150 }} />
+        <Button type="primary" onClick={run} loading={loading}>Run Trends Scrape</Button>
       </Space>
     </Card>
   );
 };
 
-
 const PortalDiscoveryCard: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [stealth, setStealth] = useState(false);
+  const [niche, setNiche] = useState<string | undefined>(undefined);
 
   const run = async () => {
     setLoading(true);
     try {
-      await triggerPortalDiscovery(stealth);
-      message.success('Portal discovery started. Check Data → Discovered tab.');
+      await triggerPortalDiscovery(stealth, niche);
+      message.success('Portal discovery started.');
     } catch {
-      message.error('Failed to start portal discovery. Is the API running?');
+      message.error('Failed to start portal discovery.');
     } finally {
       setLoading(false);
     }
@@ -179,24 +183,21 @@ const PortalDiscoveryCard: React.FC = () => {
   return (
     <Card title={<><GlobalOutlined /> Portal Discovery</>} size="small">
       <Paragraph type="secondary" style={{ fontSize: 12 }}>
-        Crawls all configured portals in <code>config/portals.yaml</code> and
-        discovers new article links, saving them to the discovered_links table.
+        Crawls all configured portals and discovers new article links.
       </Paragraph>
-      <Space>
+      <Space wrap>
         <Switch
           checked={stealth}
           onChange={setStealth}
           checkedChildren="Stealth ON"
           unCheckedChildren="Stealth OFF"
         />
-        <Button type="primary" onClick={run} loading={loading}>
-          Run Discovery
-        </Button>
+        <NicheSelect value={niche} onChange={v => setNiche(v)} style={{ width: 180 }} />
+        <Button type="primary" onClick={run} loading={loading}>Run Discovery</Button>
       </Space>
     </Card>
   );
 };
-
 
 const AddPortalCard: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -208,14 +209,13 @@ const AddPortalCard: React.FC = () => {
       setLoading(true);
       const result = await addPortal(values.url, values.niche, values.use_stealth);
       if (result.success) {
-        message.success(`Portal added! Found ${result.preview_links?.length ?? 0} article links.`);
+        message.success(`Portal added with niche: ${values.niche}`);
         form.resetFields(['url']);
       } else {
-        message.warning(`Parser generated but no links found: ${result.error ?? 'unknown'}`);
+        message.warning(`Parser generated but no links found.`);
       }
-    } catch (err: any) {
-      if (err?.errorFields) return;
-      message.error('Failed to parse portal. Try enabling Stealth Mode.');
+    } catch {
+      message.error('Failed to parse portal.');
     } finally {
       setLoading(false);
     }
@@ -224,53 +224,52 @@ const AddPortalCard: React.FC = () => {
   return (
     <Card title={<><SearchOutlined /> Add New Portal</>} size="small">
       <Paragraph type="secondary" style={{ fontSize: 12 }}>
-        Provide a portal/blog homepage URL. The auto-parser will detect article
-        link patterns and save the config to <code>config/portals.yaml</code>.
+        The auto-parser will detect article link patterns and save the config.
       </Paragraph>
       <Form form={form} layout="vertical" initialValues={{ niche: 'ai-engineering', use_stealth: false }}>
-        <Form.Item name="url" label="Portal URL" rules={[{ required: true, type: 'url', message: 'Enter a valid URL' }]}>
+        <Form.Item name="url" label="Portal URL" rules={[{ required: true, type: 'url' }]}>
           <Input placeholder="https://towardsdatascience.com" />
         </Form.Item>
-        <Space wrap>
+        <Space wrap align="end">
           <Form.Item name="niche" label="Niche" style={{ marginBottom: 0 }}>
-            <Select style={{ width: 180 }}>
-              <Option value="ai-engineering">AI Engineering</Option>
-              <Option value="data-science">Data Science</Option>
-            </Select>
+             <Select showSearch allowClear style={{ width: 180 }} options={NICHE_OPTIONS} />
           </Form.Item>
           <Form.Item name="use_stealth" label="Stealth Mode" valuePropName="checked" style={{ marginBottom: 0 }}>
             <Switch />
           </Form.Item>
+          <Button type="primary" onClick={run} loading={loading}>Auto-Parse & Add Portal</Button>
         </Space>
-        <Divider style={{ margin: '12px 0' }} />
-        <Button type="primary" onClick={run} loading={loading}>
-          Auto-Parse & Add Portal
-        </Button>
       </Form>
     </Card>
   );
 };
 
-
 // ── Page root ─────────────────────────────────────────────────────────────────
 
 const ScraperConsole: React.FC = () => (
-  <Space direction="vertical" size="large" style={{ width: '100%' }}>
-    <div>
-      <Title level={2}><CloudSyncOutlined style={{ marginRight: 8 }} />Scraper Console</Title>
-      <Text type="secondary">
-        Each card triggers an independent background job on the Python backend.
-        Jobs run asynchronously — refresh the Data Management tab to see results.
-      </Text>
+  <div style={{ padding: '24px 32px' }}>
+    <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+      <div>
+        <Title level={3} style={{ margin: 0, letterSpacing: '-0.02em' }}>
+          <CloudSyncOutlined style={{ marginRight: 12, color: '#3b82f6' }} />
+          Scraper Command Center
+        </Title>
+        <Text type="secondary" style={{ fontSize: 13 }}>
+          Manage your automated data ingestion pipeline.
+        </Text>
+      </div>
+      <Tag color="processing" icon={<ReloadOutlined spin />}>Status: Live</Tag>
     </div>
-    <Row gutter={[16, 16]}>
-      <Col xs={24} lg={12}><RssCard /></Col>
-      <Col xs={24} lg={12}><UrlCard /></Col>
-      <Col xs={24} lg={12}><TrendsCard /></Col>
-      <Col xs={24} lg={12}><PortalDiscoveryCard /></Col>
-      <Col xs={24}><AddPortalCard /></Col>
+
+    <Row gutter={[20, 20]}>
+      <Col xs={24} md={12} lg={8}><RssCard /></Col>
+      <Col xs={24} md={12} lg={8}><UrlCard /></Col>
+      <Col xs={24} md={12} lg={8}><TrendsCard /></Col>
+      <Col xs={24} md={12} lg={8}><PortalDiscoveryCard /></Col>
+      <Col xs={24} lg={16}><AddPortalCard /></Col>
     </Row>
-  </Space>
+  </div>
 );
 
 export default ScraperConsole;
+

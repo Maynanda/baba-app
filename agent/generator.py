@@ -41,45 +41,25 @@ BODY: {article_body}
 
 INSTRUCTIONS:
 1. Extract the most valuable insights from the source.
-2. Draft a 5-slide carousel in the following format. 
-3. The tone should be "AI practitioner who explains it simply".
-4. You MUST fill every single placeholder defined for the template.
+2. The tone should be "AI practitioner who explains it simply".
+3. You MUST fill EVERY SINGLE placeholder defined below. 
+4. If a placeholder implies an image (like 'BODY_IMAGE'), describe a high-quality visualization or diagram prompt for it in text.
 5. Also, draft a highly engaging post caption for LinkedIn/Instagram. Use emojis and hashtags.
 
-TEMPLATE PLACEHOLDERS:
+REQUIRED PLACEHOLDERS:
 {placeholders}
 
-OUTPUT FORMAT (JSON ONLY):
+OUTPUT FORMAT (STRICT JSON ONLY):
 {{
   "content_name": "Short catchy name for this post",
-  "slides": [
-    {{
-      "type": "hook",
-      "HOOK_TITLE": "...",
-      "HOOK_SUB": "..."
-    }},
-    {{
-      "type": "body_1",
-      "BODY_1_TITLE": "...",
-      "BODY_1_TEXT": "..."
-    }},
-    {{
-      "type": "body_2",
-      "BODY_2_TITLE": "...",
-      "BODY_2_TEXT": "..."
-    }},
-    {{
-      "type": "body_3",
-      "BODY_3_TITLE": "...",
-      "BODY_3_TEXT": "..."
-    }},
-    {{
-      "type": "cta",
-      "CTA_TITLE": "...",
-      "CTA_TEXT": "..."
-    }}
-  ],
-  "caption": "Your LinkedIn/Insta post body text goes here..."
+  "niche": "AI Engineering",
+  "slides_data": {{
+      "[PLACEHOLDER_NAME_1]": "Value for placeholder 1...",
+      "[PLACEHOLDER_NAME_2]": "Value for placeholder 2...",
+      ...
+  }},
+  "caption": "Your LinkedIn/Insta post body text goes here...",
+  "platforms": ["linkedin", "instagram_feed"]
 }}
 """
 

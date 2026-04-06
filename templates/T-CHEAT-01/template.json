@@ -1,0 +1,21 @@
+{
+  "id": "T-CHEAT-01",
+  "name": "Cheat Sheet Pro",
+  "aspect_ratio": "4:5",
+  "platforms": ["linkedin"],
+  "niche": ["ai_engineering", "data_science"],
+  "description": "High content density layout. Optimized for deep reference material.",
+  "placeholders": ["TOP_DESC", "TIP_1", "TIP_1_BODY", "TIP_2", "TIP_2_BODY", "TIP_3", "TIP_3_BODY", "CTA"],
+  "slides": [
+    { "index": 0, "type": "hook" },
+    { "index": 1, "type": "cheat_sheet" },
+    { "index": 2, "type": "cta" }
+  ],
+  "colors": {
+    "primary": "#f8fafd",
+    "secondary": "#ffffff",
+    "text": "#1e293b",
+    "accent": "#2563eb"
+  },
+  "status": "draft"
+}

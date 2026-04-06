@@ -38,6 +38,7 @@ class ScrapeRssRequest(BaseModel):
 
 class PortalDiscoveryRequest(BaseModel):
     use_stealth: bool = False
+    niche: str | None = None
 
 class AddPortalRequest(BaseModel):
     url: str
@@ -103,7 +104,7 @@ def run_portal_discovery(body: PortalDiscoveryRequest, background_tasks: Backgro
     """
     def _run():
         from scraper.portal_scraper import run_all_portals
-        run_all_portals(use_stealth=body.use_stealth)
+        run_all_portals(use_stealth=body.use_stealth, niche=body.niche)
 
     background_tasks.add_task(_run)
     return {"status": "started", "job": "portal_discovery"}

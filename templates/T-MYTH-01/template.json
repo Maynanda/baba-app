@@ -1,0 +1,39 @@
+{
+  "id": "T-MYTH-01",
+  "name": "Myth vs Reality",
+  "platforms": [
+    "linkedin"
+  ],
+  "aspect_ratio": "4:5",
+  "niche": [
+    "ai_engineering",
+    "personal_brand"
+  ],
+  "description": "Split-screen layout with contrasting colors. Optimized for truth-debunking content.",
+  "placeholders": [
+    "MYTH_TEXT",
+    "REALITY_TEXT",
+    "BOTTOM_INSIGHT"
+  ],
+  "slides": [
+    {
+      "index": 0,
+      "type": "myth"
+    },
+    {
+      "index": 1,
+      "type": "reality"
+    },
+    {
+      "index": 2,
+      "type": "cta"
+    }
+  ],
+  "colors": {
+    "primary": "#fee2e2",
+    "secondary": "#dcfce7",
+    "text": "#111827",
+    "accent": "#ef4444"
+  },
+  "status": "draft"
+}

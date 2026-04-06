@@ -1,0 +1,40 @@
+{
+  "id": "T-MOD-01",
+  "name": "Modern Slate",
+  "platforms": [
+    "linkedin"
+  ],
+  "aspect_ratio": "4:5",
+  "niche": [
+    "ai_engineering",
+    "data_science"
+  ],
+  "description": "Sophisticated slate-gray background with professional typography.",
+  "placeholders": [
+    "SLATE_TITLE",
+    "SLATE_SUB",
+    "SLATE_TEXT",
+    "SLATE_CTA"
+  ],
+  "slides": [
+    {
+      "index": 0,
+      "type": "hook"
+    },
+    {
+      "index": 1,
+      "type": "body"
+    },
+    {
+      "index": 2,
+      "type": "cta"
+    }
+  ],
+  "colors": {
+    "primary": "#334155",
+    "secondary": "#1e293b",
+    "text": "#f8fafc",
+    "accent": "#94a3b8"
+  },
+  "status": "draft"
+}

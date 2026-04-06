@@ -1,0 +1,22 @@
+{
+  "id": "T-NEON-01",
+  "name": "Cyberpunk AI (Dark)",
+  "aspect_ratio": "9:16",
+  "platforms": ["tiktok", "instagram_story"],
+  "niche": ["ai_engineering", "futurism"],
+  "description": "High-contrast dark theme with neon pink/blue accents. Optimized for vertical storytelling and TikTok slideshows.",
+  "placeholders": ["STORY_HOOK", "BODY_1", "BODY_2", "LINK_IN_BIO"],
+  "slides": [
+    { "index": 0, "type": "hook" },
+    { "index": 1, "type": "body" },
+    { "index": 2, "type": "body" },
+    { "index": 3, "type": "cta" }
+  ],
+  "colors": {
+    "primary": "#050505",
+    "secondary": "#0a122a",
+    "text": "#ffffff",
+    "accent": "#ff00ff"
+  },
+  "status": "draft"
+}

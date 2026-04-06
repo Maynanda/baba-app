@@ -1,0 +1,22 @@
+{
+  "id": "T-PB-01",
+  "name": "Technical Playbook",
+  "aspect_ratio": "4:5",
+  "platforms": ["linkedin", "instagram_feed"],
+  "niche": ["ai_engineering"],
+  "description": "Step-by-step workflow layout with progress bar. Ideal for 'How-to' content.",
+  "placeholders": ["HOOK_TITLE", "STEP_1_TITLE", "STEP_1_CMD", "STEP_2_TITLE", "STEP_2_CMD", "CTA_TITLE"],
+  "slides": [
+    { "index": 0, "type": "hook" },
+    { "index": 1, "type": "step" },
+    { "index": 2, "type": "step" },
+    { "index": 3, "type": "cta" }
+  ],
+  "colors": {
+    "primary": "#0f172a",
+    "secondary": "#1e293b",
+    "text": "#ffffff",
+    "accent": "#38bdf8"
+  },
+  "status": "draft"
+}

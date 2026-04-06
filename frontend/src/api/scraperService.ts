@@ -41,9 +41,10 @@ export const triggerTrendsScrape = async (
 };
 
 /** POST /api/scrape/discovery */
-export const triggerPortalDiscovery = async (useStealth: boolean = false) => {
+export const triggerPortalDiscovery = async (useStealth: boolean = false, niche?: string) => {
   const response = await apiClient.post('/scrape/discovery', {
     use_stealth: useStealth,
+    niche: niche ?? null,
   });
   return response.data;
 };

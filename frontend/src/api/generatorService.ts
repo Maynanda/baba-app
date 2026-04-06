@@ -47,6 +47,12 @@ export const fetchOutputs = async (postId: string): Promise<OutputImage[]> => {
 export const getImageUrl = (path: string): string =>
   `http://localhost:8000/api/generator/image/${path}`;
 
+/** POST /api/generator/templates — create or update a template config */
+export const saveTemplate = async (data: TemplateDetail) => {
+  const res = await apiClient.post('/generator/templates', data);
+  return res.data;
+};
+
 // ── Local types (generator-specific) ──────────────────────────────────────────
 
 export interface Template {

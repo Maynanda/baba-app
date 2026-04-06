@@ -11,11 +11,14 @@ Endpoints:
   GET  /api/generator/templates/{id} → Get a single template's full JSON schema
   POST /api/generator/generate       → Trigger PPTX → PDF → PNG generation
   GET  /api/generator/outputs/{id}   → List generated output images for a post
+  POST /api/generator/templates      → Create/Update a template schema
 ─────────────────────────────────────────────────────────────────────────────
 """
 
 import json
+import os
 from pathlib import Path
+from typing import List, Dict, Optional
 from fastapi import APIRouter, BackgroundTasks, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
@@ -29,6 +32,18 @@ router = APIRouter()
 
 
 # ── Request schemas ────────────────────────────────────────────────────────────
+
+class TemplateCreate(BaseModel):
+    id: str
+    name: str
+    platforms: List[str]
+    aspect_ratio: str
+    niche: List[str]
+    description: Optional[str] = ""
+    placeholders: List[str]
+    slides: List[Dict] = []
+    colors: Dict[str, str] = {}
+    status: str = "draft"
 
 class GenerateRequest(BaseModel):
     post_id: str
@@ -166,3 +181,48 @@ def serve_image_legacy(post_id: str, filename: str):
     if not img_path.exists():
         raise HTTPException(status_code=404, detail="Image not found")
     return FileResponse(str(img_path), media_type="image/png")
+
+
+@router.post("/templates")
+def create_template(body: TemplateCreate):
+    """
+    Create or update a template schema. 
+    Writes template.json to its folder and updates registry.json.
+    """
+    try:
+        # 1. Ensure folder exists 
+        # (Convention: template folders are named after their clear_name_id)
+        target_dir = TEMPLATES_DIR / body.id
+        target_dir.mkdir(parents=True, exist_ok=True)
+
+        # 2. Write template.json
+        with open(target_dir / "template.json", "w") as f:
+            json.dump(body.model_dump(), f, indent=2)
+
+        # 3. Update registry.json
+        registry = {"templates": []}
+        if REGISTRY_PATH.exists():
+            with open(REGISTRY_PATH) as f:
+                registry = json.load(f)
+
+        # Remove existing if any (by id)
+        templates = [t for t in registry.get("templates", []) if t["id"] != body.id]
+        
+        # Add new short entry (registry only needs high-level info)
+        templates.append({
+            "id": body.id,
+            "name": body.name,
+            "platforms": body.platforms,
+            "aspect_ratio": body.aspect_ratio,
+            "niche": body.niche,
+            "status": body.status
+        })
+        registry["templates"] = templates
+        
+        with open(REGISTRY_PATH, "w") as f:
+            json.dump(registry, f, indent=2)
+
+        return {"status": "success", "message": f"Template '{body.id}' saved and registered."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+

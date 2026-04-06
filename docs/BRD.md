@@ -166,10 +166,13 @@ baba-app/
 ### Module 4 — Template Engine (`templates/`)
 **Purpose:** Library of PPTX templates per niche and platform.
 - Each template is a folder with `template.pptx` + `template.json`
-- `template.json` defines: placeholders, slide types, colors, supported platforms
-- `registry.json` indexes all available templates
-- Content Studio reads placeholder list to auto-generate form fields
-- Live Preview reads color palette to render accurate CSS slide mockups
+- **Style Categories:** 
+  - **Dark High-Impact:** (Neon/Deep Blue - current default)
+  - **Light Minimalist:** (White background, high contrast, 1 image focus - NEW)
+- Each template.json defines: placeholders, slide types, colors, supported platforms
+- **Design Rule:** 1 Idea per slide + 24pt+ bold typography for high mobile readability.
+- **API:** Content Studio reads placeholder list to auto-generate form fields.
+- **API:** Live Preview reads color palette to render accurate CSS slide mockups.
 
 ### Module 5 — Publisher & Scheduler *(Phase 6-8)*
 **Purpose:** Post approved content to platforms on schedule.

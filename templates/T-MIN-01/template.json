@@ -1,0 +1,22 @@
+{
+  "id": "T-MIN-01",
+  "name": "The Minimalist White",
+  "aspect_ratio": "4:5",
+  "platforms": ["linkedin", "instagram_feed"],
+  "niche": ["ai_engineering"],
+  "description": "Ultra-clean white background with bold black typography. High mobile readability.",
+  "placeholders": ["HOOK_TITLE", "BODY_TITLE", "BODY_IMAGE", "CTA_TITLE"],
+  "slides": [
+    { "index": 0, "type": "hook" },
+    { "index": 1, "type": "body" },
+    { "index": 2, "type": "body" },
+    { "index": 3, "type": "cta" }
+  ],
+  "colors": {
+    "primary": "#ffffff",
+    "secondary": "#f8f9fa",
+    "text": "#0a0a0a",
+    "accent": "#1677ff"
+  },
+  "status": "draft"
+}

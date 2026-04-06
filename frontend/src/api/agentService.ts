@@ -13,10 +13,11 @@ interface DraftResponse {
   message: string;
   data: {
     id: string;
-    content_name: string;
-    caption: string;
-    platforms: string[];
-    slides: Array<Record<string, string>>;
+    content_name?: string;
+    caption?: string;
+    platforms?: string[];
+    niche?: string;
+    slides_data?: Record<string, string>;
     [key: string]: any;
   };
 }
@@ -27,5 +28,5 @@ export const createAiDraft = async (rawId: string, templateId: string = "carouse
     raw_id: rawId,
     template_id: templateId,
   });
-  return res.data;
+  return res.data.data; // Return the inner data object directly
 };

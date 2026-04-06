@@ -1,0 +1,21 @@
+{
+  "id": "T-STOR-01",
+  "name": "Vertical Narrative",
+  "aspect_ratio": "9:16",
+  "platforms": ["instagram_story", "tiktok"],
+  "niche": ["personal_brand"],
+  "description": "Centered typography with transparent card overlay. Optimized for personal storytelling.",
+  "placeholders": ["STORY_CMD", "STORY_TEXT", "SOCIAL_HANDLE"],
+  "slides": [
+    { "index": 0, "type": "story" },
+    { "index": 1, "type": "story" },
+    { "index": 2, "type": "cta" }
+  ],
+  "colors": {
+    "primary": "#ffffff",
+    "secondary": "rgba(255,255,255,0.8)",
+    "text": "#1a1a1a",
+    "accent": "#6366f1"
+  },
+  "status": "draft"
+}

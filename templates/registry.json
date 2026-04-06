@@ -2,21 +2,163 @@
   "templates": [
     {
       "id": "carousel_dark_1x1",
-      "name": "Dark Carousel",
-      "platforms": ["linkedin", "instagram_feed"],
+      "name": "Dark Carousel (Legacy)",
+      "platforms": [
+        "linkedin",
+        "instagram_feed"
+      ],
       "aspect_ratio": "1:1",
-      "niche": ["ai-engineering", "data-science"],
-      "status": "ready",
-      "path": "carousel_dark_1x1/main_carousel.pptx"
+      "niche": [
+        "ai-engineering",
+        "data-science"
+      ],
+      "status": "ready"
     },
     {
       "id": "story_dark_9x16",
-      "name": "Dark Story / TikTok",
-      "platforms": ["instagram_story", "tiktok"],
+      "name": "Dark Story (Legacy)",
+      "platforms": [
+        "instagram_story",
+        "tiktok"
+      ],
       "aspect_ratio": "9:16",
-      "niche": ["ai-engineering", "data-science"],
-      "status": "ready",
-      "path": "story_dark_9x16/main_story.pptx"
+      "niche": [
+        "ai-engineering",
+        "data-science"
+      ],
+      "status": "ready"
+    },
+    {
+      "id": "T-MIN-01",
+      "name": "The Minimalist White",
+      "platforms": [
+        "linkedin",
+        "instagram_feed"
+      ],
+      "aspect_ratio": "4:5",
+      "niche": [
+        "ai_engineering"
+      ],
+      "status": "draft"
+    },
+    {
+      "id": "T-PB-01",
+      "name": "Technical Playbook",
+      "platforms": [
+        "linkedin",
+        "instagram_feed"
+      ],
+      "aspect_ratio": "4:5",
+      "niche": [
+        "ai_engineering"
+      ],
+      "status": "draft"
+    },
+    {
+      "id": "T-CHART-01",
+      "name": "Data Digest (Chart Focus)",
+      "platforms": [
+        "linkedin",
+        "instagram_feed"
+      ],
+      "aspect_ratio": "4:5",
+      "niche": [
+        "data_science"
+      ],
+      "status": "draft"
+    },
+    {
+      "id": "T-NEON-01",
+      "name": "Cyberpunk AI (Dark)",
+      "platforms": [
+        "tiktok",
+        "instagram_story"
+      ],
+      "aspect_ratio": "9:16",
+      "niche": [
+        "ai_engineering",
+        "futurism"
+      ],
+      "status": "draft"
+    },
+    {
+      "id": "T-STOR-01",
+      "name": "Vertical Narrative",
+      "platforms": [
+        "instagram_story",
+        "tiktok"
+      ],
+      "aspect_ratio": "9:16",
+      "niche": [
+        "personal_brand"
+      ],
+      "status": "draft"
+    },
+    {
+      "id": "T-CHEAT-01",
+      "name": "Cheat Sheet Pro",
+      "platforms": [
+        "linkedin"
+      ],
+      "aspect_ratio": "4:5",
+      "niche": [
+        "ai_engineering",
+        "data_science"
+      ],
+      "status": "draft"
+    },
+    {
+      "id": "T-BRAND-01",
+      "name": "Authority Portrait",
+      "platforms": [
+        "linkedin",
+        "instagram_feed"
+      ],
+      "aspect_ratio": "1:1",
+      "niche": [
+        "personal_brand",
+        "leadership"
+      ],
+      "status": "draft"
+    },
+    {
+      "id": "T-AI-01",
+      "name": "AI System Architecture",
+      "platforms": [
+        "linkedin"
+      ],
+      "aspect_ratio": "4:5",
+      "niche": [
+        "ai_engineering",
+        "systems_design"
+      ],
+      "status": "draft"
+    },
+    {
+      "id": "T-MOD-01",
+      "name": "Modern Slate",
+      "platforms": [
+        "linkedin"
+      ],
+      "aspect_ratio": "4:5",
+      "niche": [
+        "ai_engineering",
+        "data_science"
+      ],
+      "status": "draft"
+    },
+    {
+      "id": "T-MYTH-01",
+      "name": "Myth vs Reality",
+      "platforms": [
+        "linkedin"
+      ],
+      "aspect_ratio": "4:5",
+      "niche": [
+        "ai_engineering",
+        "personal_brand"
+      ],
+      "status": "draft"
     }
   ]
 }

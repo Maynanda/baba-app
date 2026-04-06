@@ -16,10 +16,11 @@ import React from 'react';
 import {
   BrowserRouter as Router, Routes, Route, Link, useLocation,
 } from 'react-router-dom';
-import { Layout, Menu, Typography, Space } from 'antd';
+import { Layout, Menu, Space } from 'antd';
 import {
   DatabaseOutlined, CloudSyncOutlined,
   FormatPainterOutlined, EditOutlined, RobotOutlined, BookOutlined, SendOutlined,
+  AppstoreAddOutlined
 } from '@ant-design/icons';
 
 // ── Page imports ──────────────────────────────────────────────────────────────
@@ -28,10 +29,10 @@ import ScraperConsole  from './pages/ScraperConsole';
 import VisualGenerator from './pages/VisualGenerator';
 import ContentStudio   from './pages/ContentStudio';
 import PublisherAssistant from './pages/PublisherAssistant';
+import TemplateStudio from './pages/TemplateStudio';
 import Walkthrough     from './pages/Walkthrough';
 
 const { Header, Content } = Layout;
-const { Text } = Typography;
 
 // ── Nav items definition ──────────────────────────────────────────────────────
 // key must match the Route path (without leading /)
@@ -57,6 +58,11 @@ const navItems = [
     label: <Link to="/generator">Generator</Link>,
   },
   {
+    key: 'templates',
+    icon: <AppstoreAddOutlined />,
+    label: <Link to="/templates">Templates</Link>,
+  },
+  {
     key: 'publisher',
     icon: <SendOutlined />,
     label: <Link to="/publisher">Publisher</Link>,
@@ -74,7 +80,7 @@ const AppLayout: React.FC = () => {
   const selectedKey = location.pathname.split('/')[1] || 'data';
 
   return (
-    <Layout style={{ minHeight: '100vh', background: '#f5f5f5' }}>
+    <Layout style={{ minHeight: '100vh', background: '#f8fafc' }}>
       {/* ── Top Header ─────────────────────────────────────────────────────── */}
       <Header
         style={{
@@ -83,21 +89,19 @@ const AppLayout: React.FC = () => {
           zIndex: 100,
           display: 'flex',
           alignItems: 'center',
-          padding: '0 24px',
+          padding: '0 32px',
           background: '#0f172a',
-          borderBottom: '1px solid #1e293b',
-          height: 52,
+          height: 56,
+          boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
         }}
       >
         {/* Brand */}
-        <Space style={{ marginRight: 32, flexShrink: 0 }}>
-          <RobotOutlined style={{ color: '#38bdf8', fontSize: 18 }} />
-          <Text strong style={{ color: '#fff', fontSize: 15, letterSpacing: 0.5 }}>
-            Baba-App
-          </Text>
-          <Text style={{ color: '#475569', fontSize: 11 }}>
-            Content Automation
-          </Text>
+        <Space style={{ marginRight: 48, flexShrink: 0 }}>
+          <RobotOutlined style={{ color: '#38bdf8', fontSize: 20 }} />
+          <div>
+            <div style={{ color: '#fff', fontSize: 13, fontWeight: 700, lineHeight: 1.2, letterSpacing: '0.025em' }}>BABA APP</div>
+            <div style={{ color: '#94a3b8', fontSize: 9, fontWeight: 500, letterSpacing: '0.05em' }}>CONTENT PIPELINE</div>
+          </div>
         </Space>
 
         {/* Navigation */}
@@ -105,29 +109,32 @@ const AppLayout: React.FC = () => {
           mode="horizontal"
           selectedKeys={[selectedKey]}
           items={navItems}
+          theme="dark"
           style={{
             flex: 1,
             background: 'transparent',
             border: 'none',
-            color: '#94a3b8',
-            lineHeight: '50px',
+            fontSize: 13,
+            fontWeight: 500,
           }}
-          theme="dark"
         />
       </Header>
 
       {/* ── Page Content ───────────────────────────────────────────────────── */}
-      <Content style={{ padding: '20px 24px' }}>
-        {/* Agent rule: Add new <Route> here when adding a page */}
-        <Routes>
-          <Route path="/"          element={<DataManagement />} />
-          <Route path="/scraper"   element={<ScraperConsole />} />
-          <Route path="/data"      element={<DataManagement />} />
-          <Route path="/generator" element={<VisualGenerator />} />
-          <Route path="/studio"    element={<ContentStudio />} />
-          <Route path="/publisher" element={<PublisherAssistant />} />
-          <Route path="/guide"     element={<Walkthrough />} />
-        </Routes>
+      <Content style={{ position: 'relative' }}>
+        {/* Fill screen, but leave space for header */}
+        <div style={{ minHeight: 'calc(100vh - 56px)' }}>
+          <Routes>
+            <Route path="/"          element={<DataManagement />} />
+            <Route path="/scraper"   element={<ScraperConsole />} />
+            <Route path="/data"      element={<DataManagement />} />
+            <Route path="/generator" element={<VisualGenerator />} />
+            <Route path="/templates" element={<TemplateStudio />} />
+            <Route path="/studio"    element={<ContentStudio />} />
+            <Route path="/publisher" element={<PublisherAssistant />} />
+            <Route path="/guide"     element={<Walkthrough />} />
+          </Routes>
+        </div>
       </Content>
     </Layout>
   );
