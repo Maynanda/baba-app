@@ -13,8 +13,9 @@ Docs: http://localhost:8000/docs
 ─────────────────────────────────────────────────────────────────────────────
 """
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 import uvicorn
 from contextlib import asynccontextmanager
 from src.scheduler_manager import init_scheduler, stop_scheduler, scheduler

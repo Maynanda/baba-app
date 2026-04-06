@@ -90,3 +90,8 @@ def update_job_setting(job_id: str, enabled: bool, freq_h: int):
             )
             logger.info(f"Job {job_id} UPDATED (Enabled={enabled}, Freq={freq_h}h).")
     return True
+
+def stop_scheduler():
+    """Shutdown background jobs."""
+    scheduler.shutdown()
+    logger.info("Scheduler shut down.")

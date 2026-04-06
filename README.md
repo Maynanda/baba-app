@@ -102,11 +102,13 @@ Three tabs:
 2. **Panel 2 — Research Inspector:** View the full body text, source images, and metadata of any raw article without leaving your cursor. Click to copy URLs or content instantly.
 3. **Panel 3 — Slide Editor:** Modern template-driven form with slide navigation chips (`🪝 Hook` to `📣 CTA`), character counters, and platform selections.
 4. **Panel 4 — Live Preview:** Real-time rendering of your slide deck as you type. Dark-mode aesthetic tailored for mobile readability.
+### ✍️ Page 3 — Content Studio (Magic Draft Engine)
+**What it does:** A pro-grade authoring environment with built-in AI synthesis.
 
 #### Features
-- **Manual Drag-to-Resize:** All panels are resizable — maximize your writing space or your research view as needed.
-- **Persistent Collapsing:** Hide sidebars to focus entirely on your content.
-- **Smart Backgrounds:** Live preview automatically detects and displays image URLs in your slides.
+- **Magic Draft (Gemini AI)**: Select one OR MORE research articles → AI merges the context into a single post.
+- **Smart Form Filling**: AI automatically generates the Hook, Body slides, CTA, and Caption.
+- **Visual Hero Mode**: Supports 9:16 mobile-first visual templates (`T-VISUAL-01`).
 
 > ✅ Saved posts are flattened for 1:1 database mapping and are immediately available for visual generation.
 
@@ -250,17 +252,15 @@ If yours is elsewhere, update `src/generator/base.py`.
 
 ## 🗺️ Roadmap
 
+## 🗺️ Roadmap
+
 | Phase | Feature | Status |
 |-------|---------|--------|
-| 1 | Python scraping engine | ✅ Done |
-| 2 | SQLite database layer | ✅ Done |
-| 3 | PPTX → PDF → PNG generator | ✅ Done |
-| 4 | FastAPI backend with routers | ✅ Done |
-| 5 | React frontend (all 4 pages) | ✅ Done |
-| 6 | Publisher — LinkedIn API | 🔜 Next |
-| 7 | Publisher — Instagram/TikTok | 🔜 Planned |
-| 8 | Scheduler (APScheduler) | 🔜 Planned |
-| 9 | AI Agent (auto-draft from raw) | 🔜 Planned |
+| 1-5 | Core Scraper, DB, Generator, API, Frontend | ✅ Done |
+| 6-7 | Platform API Publishers | 🔜 Next |
+| 8 | **Autonomous Scheduler** (Dynamic Intervals) | ✅ Done |
+| 9 | **AI Agent** (Multi-Source Synthesis) | ✅ Done |
+| 10 | **Desktop Publisher** (Browser Automation) | ⏳ In Progress |
 
 ---
 
