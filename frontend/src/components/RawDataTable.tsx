@@ -129,7 +129,11 @@ const RawDataTable: React.FC<Props> = ({ data, loading, onDelete }) => {
 
   const parsed = safeParseJson(inspectItem?.data_json);
   const localImages = parsed?.local_images ?? [];
-  const remoteImages = parsed?.image_urls ?? [];
+  const remoteImages = (parsed?.image_urls ?? []).filter((remote: string) => {
+    // Hide remote if its name is already in the local_images list
+    const fname = remote.split('/').pop()?.split('?')[0];
+    return !localImages.includes(fname);
+  });
   
   const allImages = [
     ...localImages.map((img: string) => ({ type: 'local' as const, url: getRawImageUrl(inspectItem?.id || '', img) })),

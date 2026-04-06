@@ -18,6 +18,7 @@ class DraftRequest(BaseModel):
     raw_id: Optional[str] = None
     raw_ids: Optional[List[str]] = None
     template_id: str = "carousel_dark_1x1"
+    pro_mode: bool = False
 
 @router.post("/draft")
 async def create_ai_draft(body: DraftRequest):
@@ -25,11 +26,13 @@ async def create_ai_draft(body: DraftRequest):
     Trigger AI drafting for one or more raw content items.
     """
     target_ids = body.raw_ids if body.raw_ids else ([body.raw_id] if body.raw_id else [])
-    if not target_ids:
+    
+    # In pro_mode, we allow empty IDs because the agent will scan the archive
+    if not target_ids and not body.pro_mode:
         raise HTTPException(status_code=400, detail="No raw IDs provided.")
 
     try:
-        draft = generate_draft(target_ids, body.template_id)
+        draft = generate_draft(target_ids, body.template_id, body.pro_mode)
         if not draft:
             raise HTTPException(status_code=500, detail="AI generation failed. Check server logs.")
         

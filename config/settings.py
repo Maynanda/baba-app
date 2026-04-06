@@ -55,6 +55,7 @@ REDDIT_USER_AGENT     = os.getenv("REDDIT_USER_AGENT", "baba-app/1.0")
 OPENAI_API_KEY        = os.getenv("OPENAI_API_KEY", "")
 ANTHROPIC_API_KEY     = os.getenv("ANTHROPIC_API_KEY", "")
 GEMINI_API_KEY        = os.getenv("GEMINI_API_KEY", "")
+GEMINI_MODEL          = os.getenv("GEMINI_MODEL", "models/gemini-3-flash-preview")
 
 # ── App ───────────────────────────────────────────────────────
 DEFAULT_NICHE    = os.getenv("DEFAULT_NICHE", "ai-engineering")

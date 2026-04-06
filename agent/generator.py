@@ -25,17 +25,26 @@ import traceback
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("agent")
 
-from config.settings import GEMINI_API_KEY
+from config.settings import GEMINI_API_KEY, GEMINI_MODEL
 from src.database import get_raw_item
-# Assuming this function exists in src.generator.base or similar
-# If not, we will read the registry manually.
-from src.generator.base import load_template_metadata, BASE_DIR
+# Import our new Modular Agent Tools
+from agent.tools import register_new_template, list_recent_trends
 
-# Configure Gemini
+# Configure Gemini Client
 client = genai.Client(api_key=GEMINI_API_KEY)
 
-# Define the model — using gemini-1.5-flash for stable performance
-MODEL_NAME = "gemini-1.5-flash"
+# Define the model — centrally managed in config/settings.py
+MODEL_NAME = GEMINI_MODEL
+
+def list_available_models():
+    """Diagnostic tool to see what models your API key can access."""
+    try:
+        models = client.models.list()
+        logger.info("[agent] Available models:")
+        for m in models:
+            logger.info(f" - {m.name}")
+    except Exception as e:
+        logger.error(f"[agent] Could not list models: {e}")
 
 PROMPT_TEMPLATE = """
 You are an expert content creator specializing in AI Engineering and Data Science.
@@ -71,6 +80,7 @@ REQUIRED PLACEHOLDERS (STRICT - ONLY REALIZE THESE):
 OUTPUT FORMAT (STRICT JSON ONLY):
 {{
   "content_name": "Short catchy name for this post",
+  "template_id": "ONLY include if you used 'register_new_template' to create a custom one",
   "slides_data": {{
       "[PLACEHOLDER_NAME_1]": "Value for placeholder 1...",
       "[PLACEHOLDER_NAME_2]": "Value for placeholder 2...",
@@ -86,16 +96,30 @@ OUTPUT FORMAT (STRICT JSON ONLY):
 }}
 """
 
-def generate_draft(raw_ids: list[str], template_id: str = "carousel_dark_1x1") -> Optional[dict]:
+def generate_draft(raw_ids: list[str], template_id: str = "carousel_dark_1x1", pro_mode: bool = False) -> Optional[dict]:
     """
     Uses Gemini to generate a post draft from one or more raw article IDs.
     Returns a dict that can be used to populate the 'posts' table.
+    
+    pro_mode: If True, enables Automatic Function Calling (AFC) for tools.
     """
     # 1. Aggregated Research
     aggregated_text = ""
     visual_inventory = []
     articles = []
     
+    # Mode Switch: If no IDs, grab the latest 5 research entries for "Strategic Freedom"
+    articles_text = ""
+    if not raw_ids:
+        from src.database import get_all_raw
+        raw_list = get_all_raw()
+        if raw_list:
+            raw_ids = [r["id"] for r in raw_list[:5]]
+            logger.info(f"[agent] {'Pro Mode ' if pro_mode else ''}Autopilot on {len(raw_ids)} items.")
+        else:
+            logger.info("[agent] DB Empty. AI Creative Strategy Mode.")
+            articles_text = "No local research available currently. Synthesis from your internal 2026 AI Engineering knowledge base."
+
     for raw_id in raw_ids:
         raw_row = get_raw_item(raw_id)
         if not raw_row:
@@ -141,7 +165,13 @@ def generate_draft(raw_ids: list[str], template_id: str = "carousel_dark_1x1") -
         placeholders = ["HOOK_TITLE", "HOOK_SUB", "BODY_1_TITLE", "BODY_1_TEXT", "CTA_TITLE", "CTA_TEXT"]
 
     # 3. Call Gemini
-    # We provide the base URL and the visual inventory to help Gemini pick correctly
+    # We provide tools for AFC if pro_mode is enabled
+    tools = []
+    if pro_mode:
+        from agent.tools import AVAILABLE_TOOLS
+        tools = list(AVAILABLE_TOOLS.values())
+        logger.info(f"[agent] Pro Mode: Enabling Tools {list(AVAILABLE_TOOLS.keys())}")
+
     prompt = PROMPT_TEMPLATE.format(
         articles_text=aggregated_text,
         visual_inventory_text=visual_inventory_text,
@@ -150,24 +180,38 @@ def generate_draft(raw_ids: list[str], template_id: str = "carousel_dark_1x1") -
         template_ai_instructions=template_metadata.get("ai_instructions", "Provide a clear summary of concepts.")
     )
 
-    logger.info(f"[agent] Calling {MODEL_NAME} for synthesis...")
+    if pro_mode:
+        prompt += "\n\nAUTONOMOUS MODE: If you feel the target template structure is suboptimal for the content, use 'register_new_template' to create a better one. Then, produce content matching your new template's placeholders."
+
+    logger.info(f"[agent] Calling {MODEL_NAME} for synthesis (pro_mode={pro_mode})...")
     try:
         response = client.models.generate_content(
             model=MODEL_NAME,
-            contents=prompt,
+            contents=[prompt],
             config=types.GenerateContentConfig(
-                response_mime_type="application/json",
+                temperature=0.7,
+                tools=tools,
+                response_mime_type="text/plain",
             )
         )
         
+        raw_response_text = ""
         try:
-            raw_response_text = response.text
-        except ValueError:
-            # Handle blocked content / safety filters
-            logger.error(f"[agent] Gemini response was blocked by safety filters. Candidates: {response.candidates}")
-            return None
+            if response.text:
+                raw_response_text = response.text
+                # Cleanup if Gemini wrapped it in markdown code blocks
+                if "```json" in raw_response_text:
+                    raw_response_text = raw_response_text.split("```json")[1].split("```")[0].strip()
+                elif "```" in raw_response_text:
+                    raw_response_text = raw_response_text.split("```")[1].split("```")[0].strip()
+            else:
+                logger.error(f"[agent] No text in response. Candidates: {response.candidates}")
+                return None
+        except ValueError as ve:
+             logger.error(f"[agent] Gemini response blocked: {ve}")
+             return None
         except Exception as e:
-            logger.error(f"[agent] Unexpected error getting response text: {e}")
+            logger.error(f"[agent] Unexpected text error: {e}")
             logger.error(traceback.format_exc())
             return None
             
@@ -215,11 +259,11 @@ def generate_draft(raw_ids: list[str], template_id: str = "carousel_dark_1x1") -
             "id": f"post_ai_{datetime.now().strftime('%Y%m%d%H%M%S')}",
             "status": "draft",
             "niche": "AI Engineering",
-            "template": template_id,
+            "template": result_data.get("template_id", template_id), # support autonomous template override
             "platforms": ["linkedin", "instagram_feed"],
             "caption": result_data.get("caption", ""),
             "content_name": result_data.get("content_name", "AI Draft"),
-            "slides_data": slides_data, # Use processed slides
+            "slides_data": slides_data, 
             "slides": slides_data, 
             "raw_ref_ids": [a["id"] for a in articles],
             "created_at": datetime.now().isoformat(),

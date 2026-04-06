@@ -24,12 +24,14 @@ interface DraftResponse {
 /** POST /api/agent/draft — create an AI-powered content draft */
 export const createAiDraft = async (
   rawIds: string | string[], 
-  templateId: string = "carousel_dark_1x1"
+  templateId: string = "carousel_dark_1x1",
+  proMode: boolean = false
 ): Promise<any> => {
   const ids = Array.isArray(rawIds) ? rawIds : [rawIds];
   const resp = await apiClient.post<DraftResponse>('/agent/draft', {
     raw_ids: ids,
-    template_id: templateId
+    template_id: templateId,
+    pro_mode: proMode
   });
   return resp.data.data;
 };

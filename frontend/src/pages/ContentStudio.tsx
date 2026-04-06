@@ -142,6 +142,7 @@ const ContentStudio: React.FC = () => {
   const [previewWidth, setPreviewWidth] = useState(320);
   const [listCollapsed, setListCollapsed] = useState(false);
   const [previewCollapsed, setPreviewCollapsed] = useState(false);
+  const [suggestedStrategy, setSuggestedStrategy] = useState<any>(null);
 
   const draggingRef = useRef<string | null>(null);
   const hasAutoDrafted = useRef(false);
@@ -159,27 +160,6 @@ const ContentStudio: React.FC = () => {
     return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
   }, [listWidth, inspectorWidth, listCollapsed]);
 
-  const handleAiDraft = useCallback(async () => {
-    const tplId = form.getFieldValue('template');
-    if (!tplId) return message.warning('Select a design template first.');
-    if (selectedRawIds.length === 0) return message.warning('Select at least one research source.');
-    
-    setIsDrafting(true);
-    try {
-      const res = await createAiDraft(selectedRawIds, tplId);
-      form.setFieldsValue({
-        content_name: res.content_name || 'Draft Post',
-        niche: res.niche,
-        platform: res.platforms || ['linkedin'],
-        caption: res.caption,
-        ...res.slides_data,
-      });
-      setLiveValues(form.getFieldsValue());
-      message.success(`AI Synthesized from ${selectedRawIds.length} sources!`);
-    } catch { message.error('Magic Draft failed.'); }
-    finally { setIsDrafting(false); }
-  }, [form, selectedRawIds]);
-
   const handleTemplateSelection = useCallback(async (tplId: string) => {
     try {
       const detail = await fetchTemplate(tplId);
@@ -187,6 +167,43 @@ const ContentStudio: React.FC = () => {
       form.setFieldValue('template', tplId);
     } catch { message.error('Template detail error'); }
   }, [form]);
+
+  const handleAiDraft = useCallback(async (proMode: boolean = false) => {
+    const tplId = form.getFieldValue('template');
+    if (!tplId && !proMode) return message.warning('Select a design template first.');
+    
+    if (selectedRawIds.length === 0) {
+      message.loading('Engaging AI Freedom Autopilot...', 2);
+    }
+    
+    setIsDrafting(true);
+    try {
+      const res = await createAiDraft(selectedRawIds, tplId, proMode);
+      
+      // If AI created a new template, we should update the list or just use its ID
+      if (res.template) {
+        // Trigger template loading for the new ID
+        await handleTemplateSelection(res.template);
+      }
+
+      // Phase 13: Capture AI Strategic Advice
+      if (res.suggested_schema) {
+          setSuggestedStrategy(res.suggested_schema);
+      }
+      
+      form.setFieldsValue({
+        content_name: res.content_name || 'Draft Post',
+        niche: res.niche,
+        template: res.template,
+        platform: res.platforms || ['linkedin'],
+        caption: res.caption,
+        ...res.slides_data,
+      });
+      setLiveValues(form.getFieldsValue());
+      message.success(proMode ? "AI designed a custom layout and synthesized content!" : `AI Synthesized from ${selectedRawIds.length} sources!`);
+    } catch { message.error('Magic Draft failed.'); }
+    finally { setIsDrafting(false); }
+  }, [form, selectedRawIds, handleTemplateSelection]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -287,8 +304,41 @@ const ContentStudio: React.FC = () => {
         {viewingRaw ? (
           <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
             <div style={{ padding: '12px 16px', borderBottom: '1px solid #f1f5f9', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-               <Title level={5} style={{ margin: 0, fontSize: 10, letterSpacing: 1, color: '#64748b' }}>RESEARCH INSPECTOR</Title>
-               <Button size="small" type="primary" shape="round" icon={<RobotOutlined />} onClick={handleAiDraft} loading={isDrafting} style={{ fontSize: 10 }}>MAGIC DRAFT</Button>
+               <Title level={5} style={{ margin: 0, fontSize: 10, letterSpacing: 1, color: '#64748b' }}>
+                 {selectedRawIds.length > 0 ? `RESEARCH INSPECTOR (${selectedRawIds.length})` : 'AI FREEDOM MODE'}
+               </Title>
+                <Space>
+                   <Button 
+                     size="small" 
+                     className="pro-draft-btn"
+                     icon={<PictureOutlined />} 
+                     onClick={() => handleAiDraft(true)} 
+                     loading={isDrafting}
+                     style={{ 
+                       fontSize: 10, 
+                       borderColor: '#10b981', 
+                       color: '#059669',
+                       fontWeight: 600
+                     }}
+                   >
+                     AUTO-DESIGN
+                   </Button>
+                   <Button 
+                     size="small" 
+                     type="primary" 
+                     shape="round" 
+                     icon={<RobotOutlined />} 
+                     onClick={() => handleAiDraft(false)} 
+                     loading={isDrafting} 
+                     style={{ 
+                       fontSize: 10, 
+                       background: selectedRawIds.length === 0 ? '#10b981' : '#6366f1',
+                       border: 'none'
+                     }}
+                   >
+                     {selectedRawIds.length === 0 ? 'AI FREEDOM DRAFT' : 'MAGIC DRAFT'}
+                   </Button>
+                </Space>
             </div>
             {(() => {
                 const p = parseJson(viewingRaw.data_json);
@@ -354,6 +404,15 @@ const ContentStudio: React.FC = () => {
         <div style={{ flex: 1, padding: '32px 40px', overflowY: 'auto' }}>
           <Form form={form} layout="vertical" onValuesChange={(_, all) => setLiveValues(all)}>
             <div style={{ maxWidth: 720 }}>
+              {suggestedStrategy && (
+                <div style={{ marginBottom: 24, padding: 16, background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 12 }}>
+                  <Space><RobotOutlined style={{ color: '#0369a1' }} /><Text strong style={{ color: '#0369a1' }}>AI DESIGN STRATEGY</Text></Space>
+                  <div style={{ marginTop: 8, fontSize: 13, color: '#0369a1' }}>
+                    <b>Slide Blueprint:</b> {suggestedStrategy.optimal_slide_count} slides ({suggestedStrategy.best_visual_strategy})<br/>
+                    <b>Strategic Rationale:</b> {suggestedStrategy.reason}
+                  </div>
+                </div>
+              )}
               <Row gutter={16}>
                 <Col span={8}><Form.Item name="content_name" label="Project Title (Internal)" required><Input placeholder="e.g. AI Strategy Post" /></Form.Item></Col>
                 <Col span={8}><Form.Item name="niche" label="Niche" required><NicheSelect value={form.getFieldValue('niche')} onChange={v => form.setFieldValue('niche', v)} /></Form.Item></Col>

@@ -77,6 +77,17 @@ def init_db(conn=None):
     )
     """)
     
+    # Table for design templates
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS templates (
+        id TEXT PRIMARY KEY,
+        name TEXT,
+        description TEXT,
+        placeholders TEXT,
+        created_at TIMESTAMP
+    )
+    """)
+    
     conn.commit()
 
 # --- DISCOVERED LINKS ---
