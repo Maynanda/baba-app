@@ -7,6 +7,6 @@
   "portal_auto_discovery": {
     "name": "Portal Discovery",
     "frequency_hours": 24,
-    "enabled": false
+    "enabled": true
   }
 }

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   Table, Tag, Drawer, Typography, Button, Popconfirm, 
-  Space, Divider, Image, Tooltip, message, Badge 
+  Space, Divider, Image, Tooltip, message, Badge, Input, Select
 } from 'antd';
 import { 
   DeleteOutlined, 
@@ -19,6 +19,7 @@ import { getRawImageUrl } from '../api/dataService';
 import { safeParseJson } from '../api/generatorService';
 
 const { Title, Paragraph, Text } = Typography;
+const { Option } = Select;
 
 interface Props {
   data: RawContent[];
@@ -37,12 +38,23 @@ const SOURCE_COLORS: Record<string, string> = {
 
 const RawDataTable: React.FC<Props> = ({ data, loading, onDelete }) => {
   const [inspectItem, setInspectItem] = useState<RawContent | null>(null);
+  const [search, setSearch] = useState('');
+  const [sourceFilter, setSourceFilter] = useState('all');
   const navigate = useNavigate();
 
   const handleCopy = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     message.success(`${label} copied to clipboard!`);
   };
+
+  const filteredData = data.filter(i => {
+    const matchSearch = i.title.toLowerCase().includes(search.toLowerCase()) || 
+                        i.source.toLowerCase().includes(search.toLowerCase());
+    const matchSource = sourceFilter === 'all' || i.source === sourceFilter;
+    return matchSearch && matchSource;
+  });
+
+  const sources = Array.from(new Set(data.map(d => d.source)));
 
   const columns: ColumnsType<RawContent> = [
     {
@@ -53,8 +65,6 @@ const RawDataTable: React.FC<Props> = ({ data, loading, onDelete }) => {
       render: (source: string) => (
         <Tag color={SOURCE_COLORS[source] ?? 'default'} style={{ textTransform: 'uppercase', fontSize: 10 }}>{source}</Tag>
       ),
-      filters: [...new Set(data.map(d => d.source))].map(s => ({ text: s, value: s })),
-      onFilter: (value, record) => record.source === value,
     },
     {
       title: 'Niche',
@@ -84,15 +94,6 @@ const RawDataTable: React.FC<Props> = ({ data, loading, onDelete }) => {
         const d2 = safeParseJson(b.data_json).published_date || b.scraped_at;
         return new Date(d1).getTime() - new Date(d2).getTime();
       },
-    },
-    {
-      title: 'Scraped',
-      dataIndex: 'scraped_at',
-      key: 'scraped_at',
-      width: 140,
-      render: (val: string) => <Text type="secondary" style={{ fontSize: 11 }}>{val ? new Date(val).toLocaleDateString() : '—'}</Text>,
-      sorter: (a, b) => new Date(a.scraped_at).getTime() - new Date(b.scraped_at).getTime(),
-      defaultSortOrder: 'descend',
     },
     {
       title: 'Actions',
@@ -137,15 +138,36 @@ const RawDataTable: React.FC<Props> = ({ data, loading, onDelete }) => {
 
   return (
     <>
+      <div style={{ marginBottom: 16, display: 'flex', gap: 12, alignItems: 'center', background: '#fff', padding: 16, borderRadius: 12, border: '1px solid #f1f5f9' }}>
+        <Input.Search 
+          placeholder="Search research library..." 
+          value={search} 
+          onChange={e => setSearch(e.target.value)} 
+          style={{ width: 300 }} 
+          allowClear 
+        />
+        <Select 
+          value={sourceFilter} 
+          onChange={setSourceFilter} 
+          style={{ width: 180 }}
+        >
+          <Option value="all">All Sources</Option>
+          {sources.map(s => <Option key={s} value={s}>{s.toUpperCase()}</Option>)}
+        </Select>
+        <Text type="secondary" style={{ fontSize: 12, marginLeft: 'auto' }}>
+          Showing {filteredData.length} of {data.length} articles
+        </Text>
+      </div>
+
       <Table<RawContent>
-        dataSource={data}
+        dataSource={filteredData}
         columns={columns}
         rowKey="id"
         loading={loading}
         pagination={{ pageSize: 15, showSizeChanger: true, showTotal: (t) => `${t} articles found` }}
         size="middle"
         scroll={{ x: 'max-content' }}
-        style={{ width: '100%', background: '#fff', borderRadius: 8, overflow: 'hidden', border: '1px solid #f1f5f9' }}
+        style={{ width: '100%', background: '#fff', borderRadius: 12, overflow: 'hidden', border: '1px solid #f1f5f9' }}
       />
 
       <Drawer

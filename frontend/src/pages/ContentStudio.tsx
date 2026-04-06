@@ -65,6 +65,7 @@ const SourceBrowser: React.FC<{
 }> = ({ items, loading, selectedIds, onToggle, onView }) => {
   const [search, setSearch] = useState('');
   const [sourceFilter, setSourceFilter] = useState('all');
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
 
   const filtered = items
     .filter(i => {
@@ -73,7 +74,11 @@ const SourceBrowser: React.FC<{
       const matchSource = sourceFilter === 'all' || i.source === sourceFilter;
       return matchSearch && matchSource;
     })
-    .sort((a, b) => new Date(b.scraped_at).getTime() - new Date(a.scraped_at).getTime());
+    .sort((a, b) => {
+      const d1 = new Date(a.scraped_at).getTime();
+      const d2 = new Date(b.scraped_at).getTime();
+      return sortOrder === 'newest' ? d2 - d1 : d1 - d2;
+    });
 
   const sources = Array.from(new Set(items.map(i => i.source)));
 
@@ -81,10 +86,16 @@ const SourceBrowser: React.FC<{
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div style={{ padding: 12, borderBottom: '1px solid #f1f5f9', display: 'flex', gap: 6, flexDirection: 'column' }}>
         <Input.Search placeholder="Search research…" value={search} onChange={e => setSearch(e.target.value)} size="small" allowClear />
-        <Select size="small" value={sourceFilter} onChange={setSourceFilter} style={{ width: '100%' }}>
-           <Option value="all">All Sources</Option>
-           {sources.map(s => <Option key={s} value={s}>{s.toUpperCase()}</Option>)}
-        </Select>
+        <div style={{ display: 'flex', gap: 4 }}>
+          <Select size="small" value={sourceFilter} onChange={setSourceFilter} style={{ flex: 2 }}>
+             <Option value="all">Sources: ALL</Option>
+             {sources.map(s => <Option key={s} value={s}>{s.toUpperCase()}</Option>)}
+          </Select>
+          <Select size="small" value={sortOrder} onChange={setSortOrder} style={{ flex: 1 }}>
+             <Option value="newest">Latest</Option>
+             <Option value="oldest">Oldest</Option>
+          </Select>
+        </div>
       </div>
       <div style={{ flex: 1, overflowY: 'auto', borderTop: '1px solid #f1f5f9' }}>
         {loading ? <div style={{ padding: 20, textAlign: 'center' }}><Spin size="small" /></div> : 
@@ -98,8 +109,11 @@ const SourceBrowser: React.FC<{
            }}>
              <Checkbox checked={selectedIds.includes(item.id)} onChange={() => onToggle(item.id)} style={{ marginTop: 2 }} />
              <div onClick={() => onView(item)} style={{ flex: 1 }}>
-               <div style={{ fontSize: 11, fontWeight: 500, color: '#334155' }}>{item.title}</div>
-               <Tag color={SOURCE_COLORS[item.source]} style={{ fontSize: 8, marginTop: 4 }}>{item.source}</Tag>
+               <div style={{ fontSize: 11, fontWeight: 500, color: '#1e293b', marginBottom: 2 }}>{item.title}</div>
+               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                 <Tag color={SOURCE_COLORS[item.source]} style={{ fontSize: 8, margin: 0 }}>{item.source.toUpperCase()}</Tag>
+                 <Text type="secondary" style={{ fontSize: 9 }}>{new Date(item.scraped_at).toLocaleDateString()}</Text>
+               </div>
              </div>
            </div>
          ))}
