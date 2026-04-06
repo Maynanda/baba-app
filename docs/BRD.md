@@ -1,5 +1,5 @@
 # 📋 BRD — Baba-App: Automated Content Creation Platform
-**Version:** 2.5 · **Date:** 2026-04-05 · **Status:** Active Development
+**Version:** 3.0 · **Date:** 2026-04-06 · **Status:** Active Development
 
 ---
 
@@ -7,7 +7,7 @@
 
 **Baba-App** is a local, Python + React content automation platform for a personal brand in the **AI Engineering & Data Science** niche. The system automates the full content lifecycle:
 
-> **Trend Research & Scraping → Content Writing (Live Studio/AI Agent) → Visual Generation → Desktop/API Publishing**
+> **Trend Research & Scraping → Content Writing (4-Panel Ultimate Workspace) → Visual Generation (Dynamic) → Desktop/Manual Publishing (Finder Bridge)**
 
 Runs entirely on a local machine. Built on a fully decoupled architecture: a FastAPI Python backend communicating with a React/Vite frontend via a typed REST API. No Streamlit.
 
@@ -27,10 +27,10 @@ Runs entirely on a local machine. Built on a fully decoupled architecture: a Fas
 | # | Goal | Status |
 |---|------|--------|
 | G1 | Automate trend discovery & research | ✅ Done |
-| G2 | Live content writing studio (split-screen, template-driven) | ✅ Done |
-| G3 | Produce platform-ready visual assets per platform per template | ✅ Done |
-| G4 | Schedule & post to LinkedIn / TikTok / Instagram | ⏳ In Progress |
-| G5 | Reusable PPTX template library (niche + platform selectable) | ✅ Done |
+| G2 | 4-Panel Ultimate Content Studio (resizable, edge-to-edge) | ✅ Done |
+| G3 | Produce platform-ready visual assets (Images + PDF Carousels) | ✅ Done |
+| G4 | Productivity Bridge: Reveal in Finder for local publication | ✅ Done |
+| G5 | Reusable PPTX template library (Dynamic detection) | ✅ Done |
 | G6 | AI agent for autonomous drafting (Slides + Captions) | ✅ Done |
 | G7 | Desktop Publishing Assistant (Playwright-driven manual bridge) | ⏳ In Progress |
 
@@ -63,20 +63,20 @@ Runs entirely on a local machine. Built on a fully decoupled architecture: a Fas
 |---------|---------|
 | **Scraper Console** | RSS, Single URL (with Stealth Mode), Google/Reddit Trends, Portal Discovery, Add Portal |
 | **Data Management** | Raw Content table, Content Pipeline table, Discovered Links table |
-| **Content Studio** | 3-panel live studio: Source Inspector + Slide Editor + Live Preview |
+| **Content Studio** | **Ultimate Workspace (4-panel)**: Resizable panels, Research Inspector, flat JSON save |
 | **AI Magic Draft** | One-click carousel drafting via Google Gemini 1.5 Flash |
-| **Visual Generator** | Post picker + Template/Platform selectors + auto-refresh gallery (Fixed) |
-| **Desktop Publisher** | Playwright-powered background posting (LinkedIn Beta) |
+| **Visual Generator** | Smart PPTX discovery, PDF Carousel serving, Auto-refresh gallery |
+| **Finder Bridge** | "Reveal in Finder" button to jump to local output files instantly |
 | **FastAPI Backend** | `/api/data/`, `/api/scrape/`, `/api/generator/` routers fully wired |
-| **React Frontend** | 4-page app with top-nav, modular service layer, TypeScript types |
+| **React Frontend** | 4-page app with top-nav, modular service layer, full-width edge-to-edge layout |
 
 ### What's Missing ❌
 
 | Feature | Phase |
 |---------|-------|
-| Desktop Automation Publisher (Hand) | Phase 10 |
-| LinkedIn/Instagram/TikTok Direct API | Phase 6-7 |
+| Automated Platform Posting (Fully Unattended) | Phase 10 (Playwright) |
 | Scheduler (APScheduler) | Phase 8 |
+| Template Library Expansion | Phase 11 |
 
 ---
 

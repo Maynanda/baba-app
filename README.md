@@ -73,66 +73,44 @@ Three tabs:
 
 ---
 
-### ✍️ Page 3 — Content Studio
+### ✍️ Page 3 — Content Studio (Ultimate Workspace)
 
-**What it does:** A 3-panel live authoring workspace to turn raw research into finished slide drafts.
+**What it does:** A pro-grade, 4-panel live authoring environment designed for high-performance content creation.
 
-#### Layout
+#### 4-Panel Layout
+1. **Panel 1 — Navigation/Collections:** Browse your 1700+ scraped articles with instant keyword filtering.
+2. **Panel 2 — Research Inspector:** View the full body text, source images, and metadata of any raw article without leaving your cursor. Click to copy URLs or content instantly.
+3. **Panel 3 — Slide Editor:** Modern template-driven form with slide navigation chips (`🪝 Hook` to `📣 CTA`), character counters, and platform selections.
+4. **Panel 4 — Live Preview:** Real-time rendering of your slide deck as you type. Dark-mode aesthetic tailored for mobile readability.
 
-```
-[ Source Material ] | [ Write Content ] | [ Live Preview ]
-```
+#### Features
+- **Manual Drag-to-Resize:** All panels are resizable — maximize your writing space or your research view as needed.
+- **Persistent Collapsing:** Hide sidebars to focus entirely on your content.
+- **Smart Backgrounds:** Live preview automatically detects and displays image URLs in your slides.
 
-**Panel 1 — Source Material** *(collapsible)*
-- Search your 1700+ scraped articles
-- Click any article → full body text, author, date, source link all appear below
-- Click any keyword or the copy button to copy text directly into the editor
-
-**Panel 2 — Write Content**
-- Slide navigation chips at the top: `🪝 Hook` `① Body 1` `② Body 2` `③ Body 3` `📣 CTA`
-- Click a chip to switch to that slide's fields
-- Character counters on every field (title: 80 chars, body: 280 chars)
-- **Content Name** — give your post a memorable label (shows in Generator)
-- **Publish to Platforms** — pick which platforms this post targets
-
-**Panel 3 — Live Preview** *(collapsible)*
-- Renders your slide deck as you type — no button clicks needed
-- Click any slide card → jumps the editor to that slide's fields
-- Dark background matches actual output template colors
-
-#### Saving
-1. Fill all slide fields
-2. Give the post a **Content Name**
-3. Select **platforms**
-4. Click **Save to Content Pipeline**
-
-> ✅ Saved posts appear in **Data → Content Pipeline** and are ready for the **Generator**.
+> ✅ Saved posts are flattened for 1:1 database mapping and are immediately available for visual generation.
 
 ---
 
 ### 🎨 Page 4 — Visual Generator
 
-**What it does:** Takes a saved content post and renders it into platform-ready images.
+**What it does:** Renders your approved content into platform-ready images and PDF documents.
 
-#### How to use
-
-1. **Select a Post** — picks from your Content Pipeline. Shows the post's name, slides, status, and platforms.
-2. **Select a Template** — choose any installed PPTX template.
-3. **Select a Platform** — LinkedIn, Instagram Feed, Instagram Story, or TikTok.
-4. **Click Generate** — fires a background job. Page **auto-refreshes in ~8 seconds**.
-5. **Images appear** grouped by platform below the controls.
-
-> 🔁 **You can re-generate the same post** with different templates. Each run adds new images to the gallery. (Fixed: Now correctly serves images via API).
+#### Features
+- **Smart Template Discovery:** Dynamically finds your PPTX templates (e.g., `template.pptx` or `main_carousel.pptx`) across folders — no manual code registration needed.
+1. **Reveal in Finder (Mac Bridge):** Click a button to instantly open the local output folder on your Mac for fast drag-and-drop posting.
+2. **Download PDF Carousel:** Direct download link for the final high-resolution LinkedIn PDF document.
+3. **Multi-Platform Support:** Render for LinkedIn, Instagram (Feed/Story), and TikTok slides in one click.
 
 ---
 
-### 🤖 Page 5 — AI Agent (New)
+### 🤖 Page 5 — Publisher Assistant
 
-**What it does:** Automatically draft carousels from raw articles.
+**What it does:** Your manual publishing command center.
 
-1. Pick a raw article in Content Studio.
-2. Click **AI Draft**.
-3. AI generates the Hook, 3 Body slides, CTA, and a **Social Media Caption**.
+1. **Mission Control:** Review your captions and visual assets side-by-side.
+2. **Desktop Automation:** Trigger Playwright-driven browser sessions to auto-upload posts (LinkedIn Document posts supported).
+3. **Local Assets:** Instant access to generated files via the "Finder" bridge.
 
 ---
 
