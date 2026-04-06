@@ -64,14 +64,27 @@ const SourceBrowser: React.FC<{
   onView: (item: RawContent) => void;
 }> = ({ items, loading, selectedIds, onToggle, onView }) => {
   const [search, setSearch] = useState('');
-  const filtered = items.filter(i =>
-    i.title.toLowerCase().includes(search.toLowerCase()) ||
-    i.source.toLowerCase().includes(search.toLowerCase()),
-  );
+  const [sourceFilter, setSourceFilter] = useState('all');
+
+  const filtered = items
+    .filter(i => {
+      const matchSearch = i.title.toLowerCase().includes(search.toLowerCase()) || 
+                          i.source.toLowerCase().includes(search.toLowerCase());
+      const matchSource = sourceFilter === 'all' || i.source === sourceFilter;
+      return matchSearch && matchSource;
+    })
+    .sort((a, b) => new Date(b.scraped_at).getTime() - new Date(a.scraped_at).getTime());
+
+  const sources = Array.from(new Set(items.map(i => i.source)));
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div style={{ padding: 12 }}>
-        <Input.Search placeholder="Search…" value={search} onChange={e => setSearch(e.target.value)} size="small" allowClear />
+      <div style={{ padding: 12, borderBottom: '1px solid #f1f5f9', display: 'flex', gap: 6, flexDirection: 'column' }}>
+        <Input.Search placeholder="Search research…" value={search} onChange={e => setSearch(e.target.value)} size="small" allowClear />
+        <Select size="small" value={sourceFilter} onChange={setSourceFilter} style={{ width: '100%' }}>
+           <Option value="all">All Sources</Option>
+           {sources.map(s => <Option key={s} value={s}>{s.toUpperCase()}</Option>)}
+        </Select>
       </div>
       <div style={{ flex: 1, overflowY: 'auto', borderTop: '1px solid #f1f5f9' }}>
         {loading ? <div style={{ padding: 20, textAlign: 'center' }}><Spin size="small" /></div> : 
@@ -282,10 +295,27 @@ const ContentStudio: React.FC = () => {
                 const imgs = [...(p.local_images?.map((im: string) => getRawImageUrl(viewingRaw.id, im)) || []), ...(p.image_urls || [])];
                 return (
                   <>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, marginBottom: 24 }}>
-                       {imgs.slice(0, 4).map((src: string, i: number) => (
-                         <div key={i} style={{ position: 'relative', cursor: 'copy', borderRadius: 8, overflow: 'hidden', border: '1px solid #e2e8f0' }} onClick={() => { navigator.clipboard.writeText(src); message.success('Img URL Copied'); }}>
-                           <img src={src} style={{ width: '100%', height: 100, objectFit: 'cover' }} />
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, marginBottom: 24 }}>
+                       {imgs.slice(0, 10).map((src: string, i: number) => (
+                         <div key={i} style={{ position: 'relative', borderRadius: 12, overflow: 'hidden', border: '1px solid #e2e8f0', background: '#fff' }}>
+                           <img src={src} style={{ width: '100%', height: 110, objectFit: 'cover' }} />
+                           <div style={{ padding: '6px', background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(4px)', display: 'flex', gap: 4, flexWrap: 'wrap', justifyContent: 'center' }}>
+                              {placeholders.filter(p => p.includes('IMAGE')).map(p => (
+                                <Button 
+                                  key={p} 
+                                  size="small" 
+                                  type="text" 
+                                  style={{ fontSize: 9, padding: '0 4px', height: 20, color: '#6366f1' }}
+                                  onClick={() => {
+                                    form.setFieldValue(p, src);
+                                    setLiveValues(form.getFieldsValue());
+                                    message.success(`Image applied to ${p}`);
+                                  }}
+                                >
+                                  +{p.split('_')[0]}
+                                </Button>
+                              ))}
+                           </div>
                          </div>
                        ))}
                     </div>

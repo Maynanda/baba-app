@@ -90,9 +90,24 @@ def scrape_feed(feed_url: str, feed_name: str = "Unknown", niche: str = DEFAULT_
 
     saved_items = []
 
+    now = datetime.now(timezone.utc)
+    from datetime import timedelta
+
     for entry in parsed.entries:
         url = entry.get("link", "")
-        if not url or is_duplicate(url):
+        if not url:
+            continue
+            
+        # --- FRESHNESS CHECK ---
+        # Skip if older than 7 days
+        published_parsed = entry.get("published_parsed")
+        if published_parsed:
+            from time import mktime
+            dt = datetime.fromtimestamp(mktime(published_parsed), timezone.utc)
+            if now - dt > timedelta(days=7):
+                continue
+        
+        if is_duplicate(url):
             continue
 
         title = entry.get("title", "Untitled")
