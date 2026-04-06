@@ -57,6 +57,26 @@ Scraper  →  Data  →  Content Studio  →  Generator
 
 ---
 
+### 💡 Scraping Strategy Guide
+
+To get the best quality data into your system, follow this priority:
+
+1. **RSS (Highest Quality)**:
+   - **Check first**: Does the site have a `/feed/` or `/rss/` URL?
+   - **Why**: Fastest and most reliable. Baba-App now automatically performs a **Deep Scrape** on RSS items to pull the full article body and high-res images, bypassing the typical "snippet-only" limitation of many feeds.
+   - **Config**: Add to [`config/feeds.yaml`](file:///Users/alpha/Documents/Project/baba-app/config/feeds.yaml).
+
+2. **Portal Discovery (For Active Monitoring)**:
+   - **Use when**: A site has no RSS but you want to follow it.
+   - **How**: Add the homepage URL to the **Add New Portal** card.
+   - **Process**: Discover links first → they appear in the **Discovered Links** tab → choose which ones to deep scrape.
+
+3. **Single URL (One-Offs)**:
+   - **Use when**: You just found a single great article and want it in your DB immediately.
+   - **Tip**: Use **Stealth Mode** if the site blocks standard requests (403 errors).
+
+---
+
 ### 🗃️ Page 2 — Data Management
 
 **What it does:** View and manage everything in your SQLite database.

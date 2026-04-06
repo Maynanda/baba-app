@@ -137,7 +137,7 @@ baba-app/
 
 ### Module 1 — Scraper (`scraper/`)
 **Purpose:** Intelligence gathering from the web.
-- `rss_scraper.py` → reads `config/feeds.yaml`, saves to `raw_content` table
+- `rss_scraper.py` → reads `config/feeds.yaml`, performs automated Deep Scraping (full text/images) for high-quality ingestion, saves to `raw_content` table
 - `url_scraper.py` → single URL deep scrape using Scrapling (with optional Stealth/patchright mode)
 - `trends_scraper.py` → Google Trends via `pytrends`, Reddit via `praw`
 - `portal_scraper.py` → crawls portals in `config/portals.yaml`, saves to `discovered_links`
