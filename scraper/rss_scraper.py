@@ -96,6 +96,13 @@ def scrape_feed(feed_url: str, feed_name: str = "Unknown", niche: str = DEFAULT_
             continue
 
         title = entry.get("title", "Untitled")
+        from scraper.dedup import is_duplicate_title, normalize_url
+        url = normalize_url(url)
+        
+        if is_duplicate_title(title):
+            print(f"  [rss_scraper] Duplicate title, skipping: {title[:50]}...")
+            continue
+            
         body = _extract_body(entry)
         image_urls = _extract_image(entry)
         

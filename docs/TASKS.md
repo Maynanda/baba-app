@@ -32,8 +32,11 @@ Quick legend: ✅ Done · 🔜 Next · ⏳ In Progress · ❌ Not Started
 - [ ] Implement Playwright automation for Instagram/TikTok.
 
 ### Phase 8: Scheduler & Automation (Next UP)
-- [ ] Implement APScheduler in `main_api.py`.
-- [ ] Create UI for viewing/canceling scheduled jobs.
+- [ ] **Autonomous Digester**: Implement APScheduler in `main_api.py` to auto-trigger RSS/Deep Scrapes.
+- [ ] **Source Management UI**: Create a centralized dashboard to Manage Sources (`feeds.yaml` / `portals.yaml`) without code.
+- [ ] **Frequency Control**: Support per-site scraping frequencies (e.g., Every hour vs. Once a day).
+- [ ] **Scheduler History**: Create a UI log to see successful/failed background jobs.
+- [ ] **Smart Alerts**: UI notification when a source fails (e.g. 403 error on Portal).
 - [ ] Support "Time to Post" windows (e.g. 9:00 AM local).
 
 ### Phase 11: Template Expansion (Visual Library) [PLANNED]

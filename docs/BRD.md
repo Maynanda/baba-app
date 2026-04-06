@@ -181,6 +181,13 @@ baba-app/
 - TikTok API
 - APScheduler for time-based triggers
 
+### Module 8 — Source & Scheduler Manager *(Phase 8 - NEW)*
+**Purpose:** Manage intelligence sources and automation frequencies.
+- **Source Dashboard**: CRUD UI for `feeds.yaml` and `portals.yaml`.
+- **Scheduler UI**: View current background jobs, next run times, and execution logs.
+- **Dynamic Config**: Change scraping frequency (1h, 6h, 24h) per source without code edits.
+- **Autonomous Digesting**: Background service to keep the database fresh 24/7.
+
 ### Module 6 — AI Agent *(Phase 9)*
 **Purpose:** Autonomous content orchestrator.
 - Auto-drafts slide content from raw scraped articles

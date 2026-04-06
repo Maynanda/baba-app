@@ -146,9 +146,16 @@ def scrape_article(url: str, niche: str = DEFAULT_NICHE, download_imgs: bool = T
         print(f"[blog_scraper] Fetch failed: {e}")
         return None
 
-    # Title
+    # Title & Content Check
     title_tags = page.css("h1") or page.css("title")
     title = title_tags[0].get_all_text().strip() if title_tags else "Untitled"
+    
+    from scraper.dedup import is_duplicate_title, normalize_url
+    if is_duplicate_title(title):
+        print(f"[blog_scraper] Duplicate title detected, skipping: {title}")
+        return None
+        
+    url = normalize_url(url)
 
     # Author
     author = ""

@@ -21,7 +21,7 @@ const { Text } = Typography;
 import {
   DatabaseOutlined, CloudSyncOutlined,
   FormatPainterOutlined, EditOutlined, RobotOutlined, BookOutlined, SendOutlined,
-  AppstoreAddOutlined
+  AppstoreAddOutlined, GlobalOutlined
 } from '@ant-design/icons';
 
 // ── Page imports ──────────────────────────────────────────────────────────────
@@ -32,6 +32,7 @@ import ContentStudio   from './pages/ContentStudio';
 import PublisherAssistant from './pages/PublisherAssistant';
 import TemplateStudio from './pages/TemplateStudio';
 import Walkthrough     from './pages/Walkthrough';
+import SourceManagement from './pages/SourceManagement';
 
 const { Header, Content } = Layout;
 
@@ -47,6 +48,11 @@ const navItems = [
     key: 'data',
     icon: <DatabaseOutlined />,
     label: <Link to="/data">Data</Link>,
+  },
+  {
+    key: 'sources',
+    icon: <GlobalOutlined />,
+    label: <Link to="/sources">Sources</Link>,
   },
   {
     key: 'studio',
@@ -153,6 +159,7 @@ const AppLayout: React.FC = () => {
             <Route path="/"          element={<DataManagement />} />
             <Route path="/scraper"   element={<ScraperConsole />} />
             <Route path="/data"      element={<DataManagement />} />
+            <Route path="/sources"   element={<SourceManagement />} />
             <Route path="/generator" element={<VisualGenerator />} />
             <Route path="/templates" element={<TemplateStudio />} />
             <Route path="/studio"    element={<ContentStudio />} />
