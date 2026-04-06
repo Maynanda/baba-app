@@ -90,29 +90,38 @@ const AppLayout: React.FC = () => {
           zIndex: 100,
           display: 'flex',
           alignItems: 'center',
-          padding: '0 24px',
+          padding: '0 32px',
           background: '#0f172a',
-          height: 56,
+          height: 70,
           boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
           borderBottom: '1px solid rgba(255,255,255,0.05)',
+          overflow: 'visible',
         }}
       >
-        <Space style={{ marginRight: 48, flexShrink: 0 }}>
+        <Space style={{ marginRight: 48, flexShrink: 0, overflow: 'visible' }}>
           <div style={{
             background: '#38bdf8',
-            width: 32,
-            height: 32,
-            borderRadius: 8,
+            width: 38,
+            height: 38,
+            borderRadius: 10,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: '0 0 15px rgba(56, 189, 248, 0.4)'
+            boxShadow: '0 0 15px rgba(56, 189, 248, 0.4)',
+            flexShrink: 0
           }}>
-            <RobotOutlined style={{ color: '#0f172a', fontSize: 18 }} />
+            <RobotOutlined style={{ color: '#0f172a', fontSize: 22 }} />
           </div>
-          <div>
-            <div style={{ color: '#fff', fontSize: 14, fontWeight: 800, letterSpacing: '0.05em', lineHeight: 1.1 }}>BABA</div>
-            <div style={{ color: '#38bdf8', fontSize: 8, fontWeight: 700, letterSpacing: '0.1em' }}>STUDIO</div>
+          <div style={{ display: 'flex', flexDirection: 'column', paddingTop: 4, overflow: 'visible' }}>
+            <div style={{ 
+              color: '#fff', 
+              fontSize: 16, 
+              fontWeight: 950, 
+              letterSpacing: '0.02em', 
+              lineHeight: 1.4,
+              textTransform: 'uppercase'
+            }}>BABA-APP</div>
+            <div style={{ color: '#38bdf8', fontSize: 9, fontWeight: 700, letterSpacing: '0.25em', marginTop: -4 }}>INTELLIGENCE</div>
           </div>
         </Space>
 
@@ -137,9 +146,9 @@ const AppLayout: React.FC = () => {
       </Header>
 
       {/* ── Page Content ───────────────────────────────────────────────────── */}
-      <Content style={{ position: 'relative' }}>
+      <Content style={{ position: 'relative', paddingTop: 16 }}>
         {/* Fill screen, but leave space for header */}
-        <div style={{ minHeight: 'calc(100vh - 56px)' }}>
+        <div style={{ minHeight: 'calc(100vh - 70px - 16px)' }}>
           <Routes>
             <Route path="/"          element={<DataManagement />} />
             <Route path="/scraper"   element={<ScraperConsole />} />
