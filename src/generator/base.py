@@ -16,8 +16,33 @@ SOFFICE_PATH = "/Applications/LibreOffice.app/Contents/MacOS/soffice"
 TEMPLATES_REGISTRY = BASE_DIR / "templates" / "registry.json"
 
 
+def get_template_path(template_id: str) -> Path:
+    """Find the PPTX file for a template id."""
+    # Priority 1: templates/{id}/template.pptx
+    t_dir = BASE_DIR / "templates" / template_id
+    if t_dir.exists():
+        for candidate in ["template.pptx", "main_carousel.pptx"]:
+            if (t_dir / candidate).exists():
+                return t_dir / candidate
+    
+    # Priority 2: root templates/main_carousel.pptx (fallback)
+    root_fallback = BASE_DIR / "templates" / "main_carousel.pptx"
+    if root_fallback.exists():
+        return root_fallback
+        
+    raise FileNotFoundError(f"No PPTX template found for '{template_id}'.")
+
+
 def load_template_metadata(template_id: str) -> dict:
-    """Read template metadata from registry.json."""
+    """Read template metadata. Prefers the local template.json inside the folder."""
+    # First: Check templates/{id}/template.json
+    t_dir = BASE_DIR / "templates" / template_id
+    tj = t_dir / "template.json"
+    if tj.exists():
+        with open(tj, "r") as f:
+            return json.load(f)
+            
+    # Second: Fallback to central registry.json
     if not TEMPLATES_REGISTRY.exists():
         raise FileNotFoundError(f"Registry not found: {TEMPLATES_REGISTRY}")
         
@@ -28,7 +53,7 @@ def load_template_metadata(template_id: str) -> dict:
         if t["id"] == template_id:
             return t
             
-    raise ValueError(f"Template '{template_id}' not found in registry.")
+    raise ValueError(f"Template '{template_id}' not found.")
 
 
 def replace_text_in_shape(shape, placeholder_dict):

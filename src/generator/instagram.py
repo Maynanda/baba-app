@@ -4,13 +4,12 @@ Generator for Instagram platform.
 Generates 1:1 format PNG for feed, and 9:16 format PNG for story.
 """
 from pathlib import Path
-from src.generator.base import load_template_metadata, fill_placeholders, export_pdf, export_images, BASE_DIR
+from src.generator.base import get_template_path, load_template_metadata, fill_placeholders, export_pdf, export_images, BASE_DIR
 from config.settings import OUTPUT_PPTX_DIR, OUTPUT_PDF_DIR, OUTPUT_IMG_DIR
 
 def _generate_images(content: dict, template_id: str, platform_suffix: str):
     print(f"  [{platform_suffix}] Starting visual generation for {content['id']}")
-    template_meta = load_template_metadata(template_id)
-    template_path = BASE_DIR / "templates" / template_meta["path"]
+    template_path = get_template_path(template_id)
     
     post_id = content["id"]
     pptx_out = OUTPUT_PPTX_DIR / f"{post_id}_{platform_suffix}.pptx"
