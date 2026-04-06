@@ -59,12 +59,18 @@ def fill_placeholders(pptx_path: Path, data: dict, output_path: Path):
     prs = Presentation(str(pptx_path))
     placeholders = {}
     
-    # We map all keys in slide 0 into placeholders because the template
-    # uses unique keys scattered across slides (e.g. BODY_1_TITLE)
-    for slide_data in data.get('slides', []):
-        for key, val in slide_data.items():
-            if key != 'type':
-                placeholders[key] = str(val)
+    # If 'slides' is a dict (new format), iterate its items. 
+    # If list (old format), iterate slides sequentially.
+    slides_data = data.get('slides', {})
+    if isinstance(slides_data, dict):
+        for key, val in slides_data.items():
+            placeholders[key] = str(val)
+    elif isinstance(slides_data, list):
+        for slide_obj in slides_data:
+            if isinstance(slide_obj, dict):
+                for key, val in slide_obj.items():
+                    if key != 'type':
+                        placeholders[key] = str(val)
                 
     for slide in prs.slides:
         for shape in slide.shapes:

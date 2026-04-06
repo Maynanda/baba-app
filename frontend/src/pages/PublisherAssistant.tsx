@@ -17,18 +17,15 @@ import {
   Empty, Spin, message, Image, Badge 
 } from 'antd';
 import { 
-  SendOutlined, 
-  CopyOutlined, 
-  ReloadOutlined,
-  ThunderboltOutlined,
-  GlobalOutlined,
-  InstagramOutlined,
-  LinkedinOutlined,
-  SelectOutlined,
-  PlayCircleOutlined
+  SendOutlined, CopyOutlined, ReloadOutlined, ThunderboltOutlined,
+  GlobalOutlined, InstagramOutlined, LinkedinOutlined, SelectOutlined,
+  FileTextOutlined, FolderOpenOutlined,
 } from '@ant-design/icons';
 import { fetchContentData } from '../api/dataService';
-import { fetchOutputs, getImageUrl, type OutputImage } from '../api/generatorService';
+import { 
+  fetchOutputs, getImageUrl, getPdfUrl, revealInFinder, safeParseJson,
+  type OutputImage 
+} from '../api/generatorService';
 import { pushToAssistant } from '../api/publisherService';
 import type { Post } from '../types';
 
@@ -102,7 +99,7 @@ const PublisherAssistant: React.FC = () => {
           Publisher Assistant
         </Title>
         <Text type="secondary">
-          Phase 10: Manual publishing bridge. Review your assets and trigger the desktop posting automation.
+          Final bridge: Review assets and trigger desktop posting or download them for manual drag-and-drop.
         </Text>
       </div>
 
@@ -118,7 +115,7 @@ const PublisherAssistant: React.FC = () => {
               posts.length === 0 ? <Empty description="No posts ready" /> : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {posts.map(p => {
-                    const d = JSON.parse(p.data_json || '{}');
+                    const d = safeParseJson(p.data_json);
                     const isActive = selectedPost?.id === p.id;
                     return (
                       <div 
@@ -156,7 +153,7 @@ const PublisherAssistant: React.FC = () => {
               {/* Caption Section */}
               <Card title="1. Review Caption" size="small">
                 {(() => {
-                  const d = JSON.parse(selectedPost.data_json || '{}');
+                  const d = safeParseJson(selectedPost.data_json);
                   const caption = d.caption || "No caption generated.";
                   return (
                     <>
@@ -197,6 +194,23 @@ const PublisherAssistant: React.FC = () => {
                           <Badge status="processing" />
                           <Text strong style={{ textTransform: 'capitalize' }}>{platform}</Text>
                           <Tag color="blue">{imgs.length} slides</Tag>
+                          <Button 
+                            icon={<FileTextOutlined />} 
+                            size="small" 
+                            href={getPdfUrl(selectedPost.id)} 
+                            target="_blank"
+                            type="link"
+                          >
+                            PDF
+                          </Button>
+                          <Button 
+                            icon={<FolderOpenOutlined />} 
+                            size="small" 
+                            onClick={() => revealInFinder(selectedPost.id)}
+                            type="link"
+                          >
+                            Finder
+                          </Button>
                         </Space>
                         <Button 
                           type="primary" 

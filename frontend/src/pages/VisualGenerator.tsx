@@ -27,11 +27,12 @@ import {
 import {
   FormatPainterOutlined, ThunderboltOutlined, ReloadOutlined,
   FileTextOutlined, ClockCircleOutlined, CheckCircleOutlined,
-  PictureOutlined, InfoCircleOutlined,
+  PictureOutlined, InfoCircleOutlined, FolderOpenOutlined,
 } from '@ant-design/icons';
 import { fetchContentData } from '../api/dataService';
 import {
   fetchTemplates, triggerGenerate, fetchOutputs, getImageUrl,
+  getPdfUrl, revealInFinder, safeParseJson,
   type Template, type OutputImage,
 } from '../api/generatorService';
 import type { Post } from '../types';
@@ -56,12 +57,10 @@ const STATUS_COLORS: Record<string, string> = {
 
 /** Post detail card shown after selecting a post */
 const PostDetailCard: React.FC<{ post: Post }> = ({ post }) => {
-  const dataJson = (() => {
-    try { return JSON.parse(post.data_json ?? '{}'); } catch { return {}; }
-  })();
-  const slides = dataJson.slides ?? [];
+  const dataJson = safeParseJson(post.data_json);
+  const slides = dataJson.slides ?? (Array.isArray(dataJson.slides_data) ? dataJson.slides_data : []);
   const name = dataJson.content_name || post.id;
-  const platforms: string[] = dataJson.platform ?? [];
+  const platforms: string[] = dataJson.platform ?? (dataJson.platforms ? [dataJson.platforms] : []);
 
   return (
     <div style={{
@@ -484,14 +483,37 @@ const VisualGenerator: React.FC = () => {
               </Space>
             }
             extra={
-              <Button
-                icon={<ReloadOutlined />}
-                size="small"
-                onClick={handleManualRefresh}
-                loading={imagesLoading}
-              >
-                Refresh
-              </Button>
+              <Space>
+                {selectedPost && (
+                  <>
+                    <Button 
+                      icon={<FileTextOutlined />} 
+                      size="small"
+                      href={getPdfUrl(selectedPost)}
+                      target="_blank"
+                      disabled={images.length === 0}
+                    >
+                      Download PDF
+                    </Button>
+                    <Button 
+                      icon={<FolderOpenOutlined />} 
+                      size="small"
+                      onClick={() => revealInFinder(selectedPost)}
+                      disabled={images.length === 0}
+                    >
+                      Open in Finder
+                    </Button>
+                  </>
+                )}
+                <Button
+                  icon={<ReloadOutlined />}
+                  size="small"
+                  onClick={handleManualRefresh}
+                  loading={imagesLoading}
+                >
+                  Refresh
+                </Button>
+              </Space>
             }
             bodyStyle={{ minHeight: 300 }}
           >

@@ -176,11 +176,40 @@ def serve_image(platform: str, post_id: str, filename: str):
 
 @router.get("/image/{post_id}/{filename}")
 def serve_image_legacy(post_id: str, filename: str):
-    """Serve a PNG image from the legacy flat structure (post_id/file, no platform subfolder)."""
+    """Serve a PNG image from the legacy flat structure (post_id/file)."""
     img_path = OUTPUT_IMG_DIR / post_id / filename
     if not img_path.exists():
         raise HTTPException(status_code=404, detail="Image not found")
     return FileResponse(str(img_path), media_type="image/png")
+
+
+@router.get("/reveal/{post_id}")
+def reveal_in_finder(post_id: str):
+    """Open the output folder in macOS Finder for the given post."""
+    import subprocess
+    target = BASE_DIR / "output" / "images" / "linkedin" / post_id
+    if not target.exists():
+        target = BASE_DIR / "output" / "images" / post_id
+    if not target.exists():
+        target = BASE_DIR / "output"
+    try:
+        subprocess.run(["open", str(target.absolute())])
+        return {"status": "success"}
+    except:
+        return {"status": "error"}
+
+
+@router.get("/pdf/{post_id}")
+def serve_pdf(post_id: str):
+    """Serve the generated LinkedIn PDF file for a post."""
+    pdf_path = BASE_DIR / "output" / "pdf" / f"{post_id}_linkedin.pdf"
+    if not pdf_path.exists():
+        for f in (BASE_DIR / "output" / "pdf").glob(f"{post_id}*.pdf"):
+            pdf_path = f
+            break
+    if not pdf_path.exists():
+        raise HTTPException(status_code=404, detail="PDF not found")
+    return FileResponse(str(pdf_path), media_type="application/pdf", filename=pdf_path.name)
 
 
 @router.post("/templates")
