@@ -62,6 +62,9 @@ Runs entirely on a local machine. Built on a fully decoupled architecture: a Fas
 | Feature | Details |
 |---------|---------|
 | **Scraper Console** | RSS, Single URL (with Stealth Mode), Google/Reddit Trends, Portal Discovery, Add Portal |
+| **Autonomous Mode** | **"Pro Mode"**: Enables the model to explore the local template registry, analyze schemas, and design new layouts via `register_custom_template`. |
+| **Design Assistant**| **"Magic Design"**: Translates natural language descriptions into a valid `template.json` schema (colors, logic, and structure). |
+| **Context Window** | Synthesizes up to 10 articles simultaneously using long-context metadata. |
 | **Data Management** | Raw Content table, Content Pipeline table, Discovered Links table |
 | **Content Studio** | **Ultimate Workspace (4-panel)**: Resizable panels, Research Inspector, flat JSON save |
 | **AI Magic Draft** | One-click carousel drafting via Google Gemini 1.5 Flash |

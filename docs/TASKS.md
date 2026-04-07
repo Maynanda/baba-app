@@ -37,6 +37,7 @@ Quick legend: ✅ Done · 🔜 Next · ⏳ In Progress · ❌ Not Started
 ## ✅ Phase 13 — Autonomous Design Orchestration [DONE]
 - [x] **AI-Generated Templates**: AI creates custom slide schemas based on content intent.
 - [x] **Template Registry Integration**: AI designs are auto-saved to `templates/` and available for reuse in "Template Studio".
+- [x] **Magic Design UI**: Front-end "AI Blueprint" input in Template Studio for instant layout generation.
 - [x] **Adaptive Schema Discovery**: Tools for the AI to "inspect" and "explore" the registry before designing.
 
 ---

@@ -245,8 +245,13 @@ If yours is elsewhere, update `src/generator/base.py`.
   }
 }
 ```
-4. Add a reference in `templates/registry.json`
-5. The template appears immediately in Content Studio and Generator dropdowns — no restart needed.
+4.### 🧩 Page 4 — Template Studio (AI Design Factory)
+**What it does:** Configure visual schemas and design new layouts with the **AI Design Assistant**.
+
+#### Features
+- **Magic Design (Gemini 3 Flash)**: Describe your vision in human language. The "Designer Persona" designs a production-ready template schema (colors, logic, placeholders) instantly.
+- **One-Click Blueprinting**: The AI response is automatically mapped to the studio form, allowing for rapid review and registration.
+- **Persistent Registry**: Designs are immediately saved to `templates/registry.json` and available across the platform.
 
 ---
 
@@ -254,8 +259,7 @@ If yours is elsewhere, update `src/generator/base.py`.
 
 | Phase | Feature | Status |
 |-------|---------|--------|
-| 1-11 | Core Scraper, DB, Generator, API, Frontend, Templates | ✅ Done |
-| 12 | **GenAI SDK Migration** (Manual Agentic Loop) | ✅ Done |
+| 1-12 | Core Scraper, DB, Generator, API, Frontend, Templates, Agentic Loop | ✅ Done |
 | 13 | **Autonomous Design Orchestration** (AI Registration) | ✅ Done |
 | 14 | **Automated Publishing Bridge** (Playwright) | ⏳ In Progress |
 
