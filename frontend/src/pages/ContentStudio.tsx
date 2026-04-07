@@ -14,7 +14,7 @@ import {
 import {
   EditOutlined, SaveOutlined, RobotOutlined,
   MenuFoldOutlined, MenuUnfoldOutlined, RightOutlined, LeftOutlined,
-  PictureOutlined, GlobalOutlined
+  PictureOutlined, GlobalOutlined, DeleteOutlined
 } from '@ant-design/icons';
 import apiClient from '../api/client';
 import {
@@ -122,21 +122,76 @@ const SourceBrowser: React.FC<{
   );
 };
 
+const SidebarTab: React.FC<{ active: 'research' | 'pipeline', onChange: (t: 'research' | 'pipeline') => void }> = ({ active, onChange }) => (
+  <div style={{ padding: '0 8px 8px 8px', display: 'flex', gap: 4 }}>
+    <Button 
+      size="small" 
+      type={active === 'research' ? 'primary' : 'text'} 
+      onClick={() => onChange('research')}
+      style={{ flex: 1, fontSize: 10 }}
+    >
+      RESEARCH
+    </Button>
+    <Button 
+      size="small" 
+      type={active === 'pipeline' ? 'primary' : 'text'} 
+      onClick={() => onChange('pipeline')}
+      style={{ flex: 1, fontSize: 10 }}
+    >
+      PIPELINE
+    </Button>
+  </div>
+);
+
+const PipelineBrowser: React.FC<{
+  items: any[];
+  onLoad: (post: any) => void;
+  onDelete: (id: string) => void;
+}> = ({ items, onLoad, onDelete }) => (
+  <div style={{ flex: 1, overflowY: 'auto' }}>
+    {items.length === 0 ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No saved drafts" /> :
+     items.map(post => (
+       <div key={post.id} style={{
+         padding: '10px 14px', cursor: 'pointer',
+         borderBottom: '1px solid #f8fafc',
+         display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+       }}>
+         <div style={{ flex: 1 }} onClick={() => onLoad(post)}>
+           <div style={{ fontSize: 11, fontWeight: 600, color: '#1e293b' }}>{post.content_name || post.id}</div>
+           <div style={{ fontSize: 9, color: '#64748b' }}>{post.template} • {new Date(post.updated_at).toLocaleDateString()}</div>
+         </div>
+         <Button 
+           size="small" 
+           type="text" 
+           danger 
+           icon={<DeleteOutlined style={{ fontSize: 10 }} />} 
+           onClick={(e) => { e.stopPropagation(); onDelete(post.id); }} 
+         />
+       </div>
+     ))}
+  </div>
+);
+
 const ContentStudio: React.FC = () => {
   const [form] = Form.useForm();
   const [searchParams] = useSearchParams();
   const rawIdFromUrl = searchParams.get('rawId');
 
+  const [sidebarTab, setSidebarTab] = useState<'research' | 'pipeline'>('research');
   const [rawItems, setRawItems] = useState<RawContent[]>([]);
+  const [savedPosts, setSavedPosts] = useState<any[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
+  
   const [selectedRawIds, setSelectedRawIds] = useState<string[]>([]);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  
   const [viewingRaw, setViewingRaw] = useState<RawContent | null>(null);
   const [fullTemplate, setFullTemplate] = useState<TemplateDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [isDrafting, setIsDrafting] = useState(false);
   const [liveValues, setLiveValues] = useState<any>({});
   
-  // Robust Panel State
+  // Panel States
   const [listWidth, setListWidth] = useState(250);
   const [inspectorWidth, setInspectorWidth] = useState(400);
   const [previewWidth, setPreviewWidth] = useState(320);
@@ -172,24 +227,11 @@ const ContentStudio: React.FC = () => {
     const tplId = form.getFieldValue('template');
     if (!tplId && !proMode) return message.warning('Select a design template first.');
     
-    if (selectedRawIds.length === 0) {
-      message.loading('Engaging AI Freedom Autopilot...', 2);
-    }
-    
     setIsDrafting(true);
     try {
       const res = await createAiDraft(selectedRawIds, tplId, proMode);
-      
-      // If AI created a new template, we should update the list or just use its ID
-      if (res.template) {
-        // Trigger template loading for the new ID
-        await handleTemplateSelection(res.template);
-      }
-
-      // Phase 13: Capture AI Strategic Advice
-      if (res.suggested_schema) {
-          setSuggestedStrategy(res.suggested_schema);
-      }
+      if (res.template) await handleTemplateSelection(res.template);
+      if (res.suggested_schema) setSuggestedStrategy(res.suggested_schema);
       
       form.setFieldsValue({
         content_name: res.content_name || 'Draft Post',
@@ -200,44 +242,66 @@ const ContentStudio: React.FC = () => {
         ...res.slides_data,
       });
       setLiveValues(form.getFieldsValue());
-      message.success(proMode ? "AI designed a custom layout and synthesized content!" : `AI Synthesized from ${selectedRawIds.length} sources!`);
+      message.success(proMode ? "AI designed a custom layout and synthesis!" : `AI Synthesized from ${selectedRawIds.length} sources!`);
     } catch { message.error('Magic Draft failed.'); }
     finally { setIsDrafting(false); }
   }, [form, selectedRawIds, handleTemplateSelection]);
 
+  const handleLoadPost = useCallback(async (post: any) => {
+    setLoading(true);
+    try {
+      setEditingId(post.id);
+      const detail = await fetchTemplate(post.template);
+      setFullTemplate(detail);
+      
+      form.setFieldsValue({
+        content_name: post.content_name,
+        niche: post.niche,
+        template: post.template,
+        platform: JSON.parse(post.platforms || '["linkedin"]'),
+        caption: post.caption,
+        ...(typeof post.data_json === 'string' ? JSON.parse(post.data_json).slides_data : post.data_json?.slides_data || {})
+      });
+      setLiveValues(form.getFieldsValue());
+      message.info(`Loaded draft: ${post.content_name}`);
+    } catch (e) {
+      console.error(e);
+      message.error('Failed to load post data');
+    } finally {
+      setLoading(false);
+    }
+  }, [form]);
+
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [r, t] = await Promise.all([fetchRawData(), fetchTemplates()]);
+      const [r, t, p] = await Promise.all([
+        fetchRawData(), 
+        fetchTemplates(),
+        apiClient.get('/data/content').then(res => res.data.data)
+      ]);
       setRawItems(r);
       setTemplates(t);
+      setSavedPosts(p);
       
       let initialTemplateId = t[0]?.id;
-      if (initialTemplateId) {
+      if (initialTemplateId && !editingId) {
         await handleTemplateSelection(initialTemplateId);
       }
 
-      // Deep Link Logic
       if (rawIdFromUrl && !hasAutoDrafted.current) {
         const item = r.find(it => it.id === rawIdFromUrl);
         if (item) {
           setViewingRaw(item);
           setSelectedRawIds([item.id]);
-          setTimeout(() => {
-             handleAiDraft();
-             hasAutoDrafted.current = true;
-          }, 1000);
+          setTimeout(() => { handleAiDraft(); hasAutoDrafted.current = true; }, 1000);
         }
       }
     } catch { message.error('Data loading error'); }
     finally { setLoading(false); }
-  }, [rawIdFromUrl, handleTemplateSelection, handleAiDraft]);
+  }, [rawIdFromUrl, handleTemplateSelection, handleAiDraft, editingId]);
 
   useEffect(() => { loadData(); }, [loadData]);
-
-  const handleToggleSelect = (id: string) => {
-    setSelectedRawIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
-  };
 
   const onSave = async () => {
     try {
@@ -248,18 +312,20 @@ const ContentStudio: React.FC = () => {
       }, {});
 
       const payload = {
-        id: `post_${Date.now()}`,
+        id: editingId || `post_${Date.now()}`,
         status: 'ready',
         niche: vals.niche,
         template: vals.template,
         platform: vals.platform,
         caption: vals.caption,
         content_name: vals.content_name,
+        slides_data: slides,
         slides: slides,
         raw_ref_ids: selectedRawIds,
       };
       await apiClient.post('/data/content', payload);
-      message.success('Post saved to pipeline!');
+      message.success(editingId ? 'Draft updated!' : 'Post saved to pipeline!');
+      loadData();
     } catch (err) {
       console.error('Save failed:', err);
       message.error('Check required fields.');
@@ -284,17 +350,36 @@ const ContentStudio: React.FC = () => {
     }}>
       {/* ── Panel 1: List (Nav) ── */}
       <div style={{ width: listCollapsed ? 48 : listWidth, transition: 'width 0.2s', background: '#fff', borderRight: '1px solid #e5e7eb', flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
-        <div style={{ padding: '12px', borderBottom: '1px solid #f1f5f9', textAlign: 'center' }}>
+        <div style={{ padding: '12px', borderBottom: '1px solid #f1f5f9', textAlign: 'center', display: 'flex', justifyContent: 'space-between' }}>
+          {!listCollapsed && <Text strong style={{ fontSize: 10, letterSpacing: 1 }}>CONTENT LIBRARY</Text>}
           <Button type="text" size="small" icon={listCollapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />} onClick={() => setListCollapsed(!listCollapsed)} />
         </div>
         {!listCollapsed && (
-          <SourceBrowser 
-            items={rawItems} 
-            loading={loading} 
-            selectedIds={selectedRawIds} 
-            onToggle={handleToggleSelect} 
-            onView={setViewingRaw} 
-          />
+          <>
+            <SidebarTab active={sidebarTab} onChange={setSidebarTab} />
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              {sidebarTab === 'research' ? (
+                <SourceBrowser 
+                  items={rawItems} 
+                  loading={loading} 
+                  selectedIds={selectedRawIds} 
+                  onToggle={(id) => {
+                    setSelectedRawIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+                  }} 
+                  onView={setViewingRaw} 
+                />
+              ) : (
+                <PipelineBrowser 
+                  items={savedPosts} 
+                  onLoad={handleLoadPost} 
+                  onDelete={async (id) => {
+                    await apiClient.delete(`/data/content/${id}`);
+                    loadData();
+                  }} 
+                />
+              )}
+            </div>
+          </>
         )}
       </div>
       {!listCollapsed && <div onMouseDown={() => { draggingRef.current = 'list'; document.body.style.cursor = 'col-resize'; }} style={{ width: 4, cursor: 'col-resize', zIndex: 100 }} />}
@@ -398,8 +483,14 @@ const ContentStudio: React.FC = () => {
       {/* ── Panel 3: Editor (Workspace) ── */}
       <div style={{ flex: 1, background: '#fff', display: 'flex', flexDirection: 'column', minWidth: 400 }}>
         <div style={{ padding: '12px 24px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Space><EditOutlined style={{ color: '#6366f1' }} /><Text strong>Authoring Studio</Text></Space>
-          <Button type="primary" icon={<SaveOutlined />} onClick={onSave} style={{ borderRadius: 6 }}>Save Changes</Button>
+          <Space>
+            <EditOutlined style={{ color: '#6366f1' }} />
+            <Text strong>{editingId ? `Editing Post: ${editingId.slice(-6)}` : 'Authoring Studio'}</Text>
+            {editingId && <Button size="small" type="text" onClick={() => { setEditingId(null); form.resetFields(); }} style={{ fontSize: 10 }}>NEW</Button>}
+          </Space>
+          <Button type="primary" icon={<SaveOutlined />} onClick={onSave} style={{ borderRadius: 6 }}>
+            {editingId ? 'Update Draft' : 'Save to Pipeline'}
+          </Button>
         </div>
         <div style={{ flex: 1, padding: '32px 40px', overflowY: 'auto' }}>
           <Form form={form} layout="vertical" onValuesChange={(_, all) => setLiveValues(all)}>

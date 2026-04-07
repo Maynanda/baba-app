@@ -72,7 +72,10 @@ INSTRUCTIONS:
    - If no source image fits, describe a new, high-quality visualization prompt.
 5. Also, draft a highly engaging post caption for LinkedIn/Instagram. Use emojis and hashtags.
 6. MANDATORY: Include the source URLs in the caption for attribution.
-7. OPTIONAL: If you suspect a different structure would better convey the story, suggest it in the "suggested_schema" field.
+7. VISUAL STRATEGY: If the technical insights are text-heavy or complex, favor 'Visual Slides'. 
+   - Assign source diagrams/photos to [PLACEHOLDER_IMAGE] keys.
+   - If no source image fits, describe a pixel-perfect visualization prompt for that slide.
+8. OPTIONAL: If you suspect a different structure would better convey the story, suggest it in the "suggested_schema" field.
 
 REQUIRED PLACEHOLDERS (STRICT - ONLY REALIZE THESE):
 {placeholders}
