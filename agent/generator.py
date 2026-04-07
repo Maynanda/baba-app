@@ -196,97 +196,107 @@ def generate_draft(raw_ids: list[str], template_id: str = "carousel_dark_1x1", p
     from agent.tools import AVAILABLE_TOOLS
     
     # 3. Agentic Execution Loop (Manual Orchestration)
-    # The models.generate_content expects tool declarations (functions) or None
-    tool_declarations = list(AVAILABLE_TOOLS.values()) if pro_mode else None
-    
-    messages = [types.Content(role="user", parts=[types.Part.from_text(prompt)])]
-    final_response = None
-    
-    for turn in range(5):
-        max_retries = 3
-        retry_delay = 2
-        
-        response = None
-        for attempt in range(max_retries):
-            try:
-                logger.info(f"[agent] Synthesis turn {turn+1} (attempt {attempt+1})...")
-                response = client.models.generate_content(
-                    model=MODEL_NAME,
-                    contents=messages,
-                    config=types.GenerateContentConfig(
-                        temperature=0.7,
-                        tools=tool_declarations,
-                        response_mime_type="text/plain",
-                    )
+    if not pro_mode:
+        # LEGACY/SIMPLE PATH: Standard Magic Draft
+        try:
+            logger.info(f"[agent] Standard synthesis with {MODEL_NAME}...")
+            response = client.models.generate_content(
+                model=MODEL_NAME,
+                contents=[prompt],
+                config=types.GenerateContentConfig(
+                    temperature=0.7,
+                    response_mime_type="text/plain",
                 )
-                break
-            except Exception as e:
-                err_str = str(e).upper()
-                if ("503" in err_str or "UNAVAILABLE" in err_str or "HIGH DEMAND" in err_str) and attempt < max_retries - 1:
-                    wait_time = retry_delay * (2 ** attempt) + (random.uniform(0, 1))
-                    logger.warning(f"[agent] Gemini Busy (503). Retrying in {wait_time:.1f}s... (Attempt {attempt+1}/{max_retries})")
-                    time.sleep(wait_time)
-                    continue
-                else:
-                    logger.error(f"[agent] Gemini synthesis failed at turn {turn+1}: {e}")
-                    return None
-
-        if not response or not response.candidates:
-            logger.error("[agent] No candidates in Gemini response.")
+            )
+        except Exception as e:
+            logger.error(f"[agent] Standard Gemini synthesis failed: {e}")
+            logger.error(traceback.format_exc())
             return None
-            
-        candidate = response.candidates[0]
-        messages.append(candidate.content) # Add model's "thinking" or "call" to history
+    else:
+        # ORCHESTRATION PATH: Pro Mode with Manual Agentic Loop
+        tool_declarations = list(AVAILABLE_TOOLS.values())
+        messages = [types.Content(role="user", parts=[types.Part.from_text(prompt)])]
+        final_response = None
         
-        # Check for Tool Calls
-        tool_calls = [p.function_call for p in candidate.content.parts if p.function_call]
-        
-        if not tool_calls:
-            # No more tool calls? This is the final synthesis text.
-            final_response = response
-            break
+        for turn in range(5):
+            max_retries = 3
+            retry_delay = 2
             
-        # Execute Tool Calls
-        logger.info(f"[agent] AI requested {len(tool_calls)} tool calls.")
-        response_parts = []
-        
-        for fc in tool_calls:
-            tool_name = fc.name
-            args = fc.args or {}
-            
-            if tool_name in AVAILABLE_TOOLS:
-                logger.info(f"[agent] Executing tool: {tool_name}({args})")
+            response = None
+            for attempt in range(max_retries):
                 try:
-                    # Run the actual local function
-                    # Note: We wrap it to match the expected tool signature if needed
-                    result = AVAILABLE_TOOLS[tool_name](**args)
+                    logger.info(f"[agent] Pro Mode turn {turn+1} (attempt {attempt+1})...")
+                    response = client.models.generate_content(
+                        model=MODEL_NAME,
+                        contents=messages,
+                        config=types.GenerateContentConfig(
+                            temperature=0.7,
+                            tools=tool_declarations,
+                            response_mime_type="text/plain",
+                        )
+                    )
+                    break
+                except Exception as e:
+                    err_str = str(e).upper()
+                    if ("503" in err_str or "UNAVAILABLE" in err_str or "HIGH DEMAND" in err_str) and attempt < max_retries - 1:
+                        wait_time = retry_delay * (2 ** attempt) + (random.uniform(0, 1))
+                        logger.warning(f"[agent] Gemini Busy (503). Retrying in {wait_time:.1f}s... (Attempt {attempt+1}/{max_retries})")
+                        time.sleep(wait_time)
+                        continue
+                    else:
+                        logger.error(f"[agent] Pro Mode Gemini failed at turn {turn+1}: {e}")
+                        logger.error(traceback.format_exc())
+                        return None
+    
+            if not response or not response.candidates:
+                logger.error("[agent] No candidates in Gemini response.")
+                return None
+                
+            candidate = response.candidates[0]
+            messages.append(candidate.content)
+            
+            # Check for Tool Calls
+            tool_calls = [p.function_call for p in candidate.content.parts if p.function_call]
+            
+            if not tool_calls:
+                final_response = response
+                break
+                
+            # Execute Tool Calls
+            logger.info(f"[agent] AI requested {len(tool_calls)} tool calls.")
+            response_parts = []
+            
+            for fc in tool_calls:
+                tool_name = fc.name
+                args = fc.args or {}
+                
+                if tool_name in AVAILABLE_TOOLS:
+                    logger.info(f"[agent] Executing: {tool_name}({args})")
+                    try:
+                        result = AVAILABLE_TOOLS[tool_name](**args)
+                        response_parts.append(types.Part.from_function_response(
+                            name=tool_name,
+                            response={"result": result}
+                        ))
+                    except Exception as tool_err:
+                        logger.error(f"[agent] Tool err: {tool_err}")
+                        response_parts.append(types.Part.from_function_response(
+                            name=tool_name,
+                            response={"error": str(tool_err)}
+                        ))
+                else:
+                    logger.warning(f"[agent] Unknown tool: {tool_name}")
                     response_parts.append(types.Part.from_function_response(
                         name=tool_name,
-                        response={"result": result}
+                        response={"error": "Tool not found."}
                     ))
-                except Exception as tool_err:
-                    logger.error(f"[agent] Tool execution error: {tool_err}")
-                    response_parts.append(types.Part.from_function_response(
-                        name=tool_name,
-                        response={"error": str(tool_err)}
-                    ))
-            else:
-                logger.warning(f"[agent] AI requested unknown tool: {tool_name}")
-                response_parts.append(types.Part.from_function_response(
-                    name=tool_name,
-                    response={"error": "Tool not found."}
-                ))
+            
+            messages.append(types.Content(role="tool", parts=response_parts))
         
-        # Add tool responses back to the conversation
-        messages.append(types.Content(role="tool", parts=response_parts))
-        # Loop continues to the next turn for Gemini to process the tool results
-    
-    if not final_response:
-        logger.error("[agent] Max turns reached without final response.")
-        return None
-    
-    # Correct the reference for follow-up code
-    response = final_response
+        if not final_response:
+            logger.error("[agent] Max turns reached without final response.")
+            return None
+        response = final_response
         
 
     raw_response_text = ""
