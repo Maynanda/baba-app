@@ -102,17 +102,15 @@ Three tabs:
 2. **Panel 2 — Research Inspector:** View the full body text, source images, and metadata of any raw article without leaving your cursor. Click to copy URLs or content instantly.
 3. **Panel 3 — Slide Editor:** Modern template-driven form with slide navigation chips (`🪝 Hook` to `📣 CTA`), character counters, and platform selections.
 4. **Panel 4 — Live Preview:** Real-time rendering of your slide deck as you type. Dark-mode aesthetic tailored for mobile readability.
-### ✍️ Page 3 — Content Studio (Magic Draft Engine)
-**What it does:** A pro-grade authoring environment with built-in AI synthesis.
+
+### ✍️ Page 3 — Content Studio (Advanced Agentic AI)
+**What it does:** A pro-grade authoring environment powered by a **Manual Agentic Orchestration Loop**.
 
 #### Features
-- **Magic Draft (Gemini 1.5 Flash)**: Select one OR MORE research articles → AI merges the context into a single post.
-- **AI Brief Architecture**: Every template now has a "Persona" (Styling Mission), ensuring Gemini writes with the perfect tone for the chosen design.
-- **Visual Intelligence**: AI scans your research for charts/diagrams and automatically selects the best images for each slide.
-- **Interactive Visual Picker**: One-click mapping from the research inspector directly to your slide editor.
-- **7-Day Freshness Filter**: Automated cut-off in the scraper ensures only the latest tech news enters your pipeline.
-
-> ✅ Saved posts are flattened for 1:1 database mapping and are immediately available for visual generation.
+- **Magic Draft (Gemini 3 Flash)**: Multi-source synthesis with automated visual curation.
+- **Pro Mode (Autonomous Design)**: The AI doesn't just write; it **designs**. It explores your template registry, analyzes schemas, and can `register_custom_template` to create brand new slide layouts on-the-fly.
+- **Resilient Reasoning**: Built-in **Exponential Backoff** retries for API high-demand periods (503 handling).
+- **Manual Tool Execution**: Complete transparency—every tool call (Register Template, List Trends) is visible in the backend logs for total auditability.
 
 ---
 
@@ -254,15 +252,12 @@ If yours is elsewhere, update `src/generator/base.py`.
 
 ## 🗺️ Roadmap
 
-## 🗺️ Roadmap
-
 | Phase | Feature | Status |
 |-------|---------|--------|
-| 1-5 | Core Scraper, DB, Generator, API, Frontend | ✅ Done |
-| 6-7 | Platform API Publishers | 🔜 Next |
-| 8 | **Autonomous Scheduler** (Dynamic Intervals) | ✅ Done |
-| 9 | **AI Agent** (Multi-Source Synthesis) | ✅ Done |
-| 10 | **Desktop Publisher** (Browser Automation) | ⏳ In Progress |
+| 1-11 | Core Scraper, DB, Generator, API, Frontend, Templates | ✅ Done |
+| 12 | **GenAI SDK Migration** (Manual Agentic Loop) | ✅ Done |
+| 13 | **Autonomous Design Orchestration** (AI Registration) | ✅ Done |
+| 14 | **Automated Publishing Bridge** (Playwright) | ⏳ In Progress |
 
 ---
 

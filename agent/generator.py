@@ -28,7 +28,7 @@ logger = logging.getLogger("agent")
 from config.settings import GEMINI_API_KEY, GEMINI_MODEL
 from src.database import get_raw_item
 # Import our new Modular Agent Tools
-from agent.tools import register_new_template, list_recent_trends
+from agent.tools import register_custom_template, list_recent_trends
 
 # Configure Gemini Client
 client = genai.Client(api_key=GEMINI_API_KEY)
@@ -83,7 +83,7 @@ REQUIRED PLACEHOLDERS (STRICT - ONLY REALIZE THESE):
 OUTPUT FORMAT (STRICT JSON ONLY):
 {{
   "content_name": "Short catchy name for this post",
-  "template_id": "ONLY include if you used 'register_new_template' to create a custom one",
+  "template_id": "ONLY include if you used 'register_custom_template' to create a custom one",
   "slides_data": {{
       "[PLACEHOLDER_NAME_1]": "Value for placeholder 1...",
       "[PLACEHOLDER_NAME_2]": "Value for placeholder 2...",
@@ -184,42 +184,109 @@ def generate_draft(raw_ids: list[str], template_id: str = "carousel_dark_1x1", p
     )
 
     if pro_mode:
-        prompt += "\n\nAUTONOMOUS INTELLIGENCE MODE:\n" \
+        prompt += "\n\nAUTONOMOUS DESIGN ORCHESTRATION MODE:\n" \
                   "1. Perform a deep meta-analysis of ALL selected research materials.\n" \
-                  "2. Identify 'High-Value Clusters'—insights that connect multiple articles.\n" \
-                  "3. If the current template structure is too restrictive or generic, use 'register_new_template' to DESIGN a custom layout specifically for this story.\n" \
-                  "4. You may use 'list_recent_trends' to ensure your synthesis aligns with the broader context of the database.\n" \
-                  "5. Return the finalized content matching your chosen or new template."
+                  "2. Use 'list_all_templates' to see if an existing design fits your synthesis strategy.\n" \
+                  "3. Use 'get_template_schema' to inspect a potential template's placeholders and colors.\n" \
+                  "4. If no existing template is perfect, use 'register_custom_template' to DESIGN a pixel-perfect layout (colors, aspect ratio, and custom placeholders) for this specific data story.\n" \
+                  "5. Return the finalized content matching your chosen or newly created template."
 
     import time
     import random
+    from agent.tools import AVAILABLE_TOOLS
     
-    max_retries = 3
-    retry_delay = 2 # initial delay in seconds
+    # 3. Agentic Execution Loop (Manual Orchestration)
+    # The models.generate_content expects tool declarations (functions) or None
+    tool_declarations = list(AVAILABLE_TOOLS.values()) if pro_mode else None
     
-    for attempt in range(max_retries):
-        try:
-            logger.info(f"[agent] Calling {MODEL_NAME} for synthesis (pro_mode={pro_mode}, attempt={attempt+1})...")
-            response = client.models.generate_content(
-                model=MODEL_NAME,
-                contents=[prompt],
-                config=types.GenerateContentConfig(
-                    temperature=0.7,
-                    tools=tools,
-                    response_mime_type="text/plain",
+    messages = [types.Content(role="user", parts=[types.Part.from_text(prompt)])]
+    final_response = None
+    
+    for turn in range(5):
+        max_retries = 3
+        retry_delay = 2
+        
+        response = None
+        for attempt in range(max_retries):
+            try:
+                logger.info(f"[agent] Synthesis turn {turn+1} (attempt {attempt+1})...")
+                response = client.models.generate_content(
+                    model=MODEL_NAME,
+                    contents=messages,
+                    config=types.GenerateContentConfig(
+                        temperature=0.7,
+                        tools=tool_declarations,
+                        response_mime_type="text/plain",
+                    )
                 )
-            )
-            break # Success!
-        except Exception as e:
-            err_str = str(e).upper()
-            if ("503" in err_str or "UNAVAILABLE" in err_str or "HIGH DEMAND" in err_str) and attempt < max_retries - 1:
-                wait_time = retry_delay * (2 ** attempt) + (random.uniform(0, 1))
-                logger.warning(f"[agent] Gemini Busy (503). Retrying in {wait_time:.1f}s... (Attempt {attempt+1}/{max_retries})")
-                time.sleep(wait_time)
-                continue
+                break
+            except Exception as e:
+                err_str = str(e).upper()
+                if ("503" in err_str or "UNAVAILABLE" in err_str or "HIGH DEMAND" in err_str) and attempt < max_retries - 1:
+                    wait_time = retry_delay * (2 ** attempt) + (random.uniform(0, 1))
+                    logger.warning(f"[agent] Gemini Busy (503). Retrying in {wait_time:.1f}s... (Attempt {attempt+1}/{max_retries})")
+                    time.sleep(wait_time)
+                    continue
+                else:
+                    logger.error(f"[agent] Gemini synthesis failed at turn {turn+1}: {e}")
+                    return None
+
+        if not response or not response.candidates:
+            logger.error("[agent] No candidates in Gemini response.")
+            return None
+            
+        candidate = response.candidates[0]
+        messages.append(candidate.content) # Add model's "thinking" or "call" to history
+        
+        # Check for Tool Calls
+        tool_calls = [p.function_call for p in candidate.content.parts if p.function_call]
+        
+        if not tool_calls:
+            # No more tool calls? This is the final synthesis text.
+            final_response = response
+            break
+            
+        # Execute Tool Calls
+        logger.info(f"[agent] AI requested {len(tool_calls)} tool calls.")
+        response_parts = []
+        
+        for fc in tool_calls:
+            tool_name = fc.name
+            args = fc.args or {}
+            
+            if tool_name in AVAILABLE_TOOLS:
+                logger.info(f"[agent] Executing tool: {tool_name}({args})")
+                try:
+                    # Run the actual local function
+                    # Note: We wrap it to match the expected tool signature if needed
+                    result = AVAILABLE_TOOLS[tool_name](**args)
+                    response_parts.append(types.Part.from_function_response(
+                        name=tool_name,
+                        response={"result": result}
+                    ))
+                except Exception as tool_err:
+                    logger.error(f"[agent] Tool execution error: {tool_err}")
+                    response_parts.append(types.Part.from_function_response(
+                        name=tool_name,
+                        response={"error": str(tool_err)}
+                    ))
             else:
-                logger.error(f"[agent] Gemini synthesis failed after {attempt+1} attempts: {e}")
-                return None
+                logger.warning(f"[agent] AI requested unknown tool: {tool_name}")
+                response_parts.append(types.Part.from_function_response(
+                    name=tool_name,
+                    response={"error": "Tool not found."}
+                ))
+        
+        # Add tool responses back to the conversation
+        messages.append(types.Content(role="tool", parts=response_parts))
+        # Loop continues to the next turn for Gemini to process the tool results
+    
+    if not final_response:
+        logger.error("[agent] Max turns reached without final response.")
+        return None
+    
+    # Correct the reference for follow-up code
+    response = final_response
         
 
     raw_response_text = ""
