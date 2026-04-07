@@ -191,104 +191,118 @@ def generate_draft(raw_ids: list[str], template_id: str = "carousel_dark_1x1", p
                   "4. You may use 'list_recent_trends' to ensure your synthesis aligns with the broader context of the database.\n" \
                   "5. Return the finalized content matching your chosen or new template."
 
-    logger.info(f"[agent] Calling {MODEL_NAME} for synthesis (pro_mode={pro_mode})...")
-    try:
-        response = client.models.generate_content(
-            model=MODEL_NAME,
-            contents=[prompt],
-            config=types.GenerateContentConfig(
-                temperature=0.7,
-                tools=tools,
-                response_mime_type="text/plain",
+    import time
+    import random
+    
+    max_retries = 3
+    retry_delay = 2 # initial delay in seconds
+    
+    for attempt in range(max_retries):
+        try:
+            logger.info(f"[agent] Calling {MODEL_NAME} for synthesis (pro_mode={pro_mode}, attempt={attempt+1})...")
+            response = client.models.generate_content(
+                model=MODEL_NAME,
+                contents=[prompt],
+                config=types.GenerateContentConfig(
+                    temperature=0.7,
+                    tools=tools,
+                    response_mime_type="text/plain",
+                )
             )
-        )
-        
-        raw_response_text = ""
-        try:
-            if response.text:
-                raw_response_text = response.text
-                # Cleanup if Gemini wrapped it in markdown code blocks
-                if "```json" in raw_response_text:
-                    raw_response_text = raw_response_text.split("```json")[1].split("```")[0].strip()
-                elif "```" in raw_response_text:
-                    raw_response_text = raw_response_text.split("```")[1].split("```")[0].strip()
-            else:
-                logger.error(f"[agent] No text in response. Candidates: {response.candidates}")
-                return None
-        except ValueError as ve:
-             logger.error(f"[agent] Gemini response blocked: {ve}")
-             return None
+            break # Success!
         except Exception as e:
-            logger.error(f"[agent] Unexpected text error: {e}")
-            logger.error(traceback.format_exc())
-            return None
-            
-        # Basic cleanup in case Gemini wrapped it in markdown code blocks
-        if raw_response_text.startswith("```json"):
-            raw_response_text = raw_response_text.strip("```json").strip("```").strip()
-            
-        try:
-            decoded_json = json.loads(raw_response_text)
-        except json.JSONDecodeError:
-            logger.error(f"[agent] Failed to parse JSON from Gemini: {raw_response_text}")
-            return None
+            err_str = str(e).upper()
+            if ("503" in err_str or "UNAVAILABLE" in err_str or "HIGH DEMAND" in err_str) and attempt < max_retries - 1:
+                wait_time = retry_delay * (2 ** attempt) + (random.uniform(0, 1))
+                logger.warning(f"[agent] Gemini Busy (503). Retrying in {wait_time:.1f}s... (Attempt {attempt+1}/{max_retries})")
+                time.sleep(wait_time)
+                continue
+            else:
+                logger.error(f"[agent] Gemini synthesis failed after {attempt+1} attempts: {e}")
+                return None
         
-        # Ensure we have a dict
-        if isinstance(decoded_json, list) and len(decoded_json) > 0:
-            result_data = decoded_json[0]
-        elif isinstance(decoded_json, dict):
-            result_data = decoded_json
-        else:
-            logger.error(f"[agent] Unexpected JSON structure: {type(decoded_json)}")
-            return None
-        
-        # 4. Final Processing (Mapping Images)
-        raw_slides = result_data.get("slides_data", {})
-        
-        # Coerce list to dict if Gemini returned a list of slide objects
-        slides_data = {}
-        if isinstance(raw_slides, list):
-            for item in raw_slides:
-                if isinstance(item, dict):
-                    slides_data.update(item)
-        elif isinstance(raw_slides, dict):
-            slides_data = raw_slides
-        
-        # Cross-reference selected filenames with inventory to get full URLs
-        for key, val in slides_data.items():
-            if "_IMAGE" in key.upper() and val:
-                # Check if it was a source image selection
-                match = next((iv for iv in visual_inventory if iv["filename"] == str(val).strip()), None)
-                if match:
-                    slides_data[key] = match["url"]
-        
-        # Canonical structure for database 'posts' table and frontend
-        final_post = {
-            "id": f"post_ai_{datetime.now().strftime('%Y%m%d%H%M%S')}",
-            "status": "draft",
-            "niche": "AI Engineering",
-            "template": result_data.get("template_id", template_id), # support autonomous template override
-            "platforms": ["linkedin", "instagram_feed"],
-            "caption": result_data.get("caption", ""),
-            "content_name": result_data.get("content_name", "AI Draft"),
-            "slides_data": slides_data, 
-            "slides": slides_data, 
-            "raw_ref_ids": [a["id"] for a in articles],
-            "created_at": datetime.now().isoformat(),
-            "updated_at": datetime.now().isoformat()
-        }
-        
-        # Merge back any top-level keys from AI if they exist
-        for k, v in result_data.items():
-            if k not in final_post and k != "slides_data":
-                final_post[k] = v
-        
-        return final_post
-        
-    except Exception as e:
-        logger.error(f"[agent] Gemini synthesis failed: {e}")
-        return None
 
+    raw_response_text = ""
+    try:
+        if response.text:
+            raw_response_text = response.text
+            # Cleanup if Gemini wrapped it in markdown code blocks
+            if "```json" in raw_response_text:
+                raw_response_text = raw_response_text.split("```json")[1].split("```")[0].strip()
+            elif "```" in raw_response_text:
+                raw_response_text = raw_response_text.split("```")[1].split("```")[0].strip()
+        else:
+            logger.error(f"[agent] No text in response. Candidates: {response.candidates}")
+            return None
+    except ValueError as ve:
+         logger.error(f"[agent] Gemini response blocked: {ve}")
+         return None
+    except Exception as e:
+        logger.error(f"[agent] Unexpected text error: {e}")
+        logger.error(traceback.format_exc())
+        return None
+        
+    # Basic cleanup in case Gemini wrapped it in markdown code blocks
+    if raw_response_text.startswith("```json"):
+        raw_response_text = raw_response_text.strip("```json").strip("```").strip()
+        
+    try:
+        decoded_json = json.loads(raw_response_text)
+    except json.JSONDecodeError:
+        logger.error(f"[agent] Failed to parse JSON from Gemini: {raw_response_text}")
+        return None
+    
+    # Ensure we have a dict
+    if isinstance(decoded_json, list) and len(decoded_json) > 0:
+        result_data = decoded_json[0]
+    elif isinstance(decoded_json, dict):
+        result_data = decoded_json
+    else:
+        logger.error(f"[agent] Unexpected JSON structure: {type(decoded_json)}")
+        return None
+    
+    # 4. Final Processing (Mapping Images)
+    raw_slides = result_data.get("slides_data", {})
+    
+    # Coerce list to dict if Gemini returned a list of slide objects
+    slides_data = {}
+    if isinstance(raw_slides, list):
+        for item in raw_slides:
+            if isinstance(item, dict):
+                slides_data.update(item)
+    elif isinstance(raw_slides, dict):
+        slides_data = raw_slides
+    
+    # Cross-reference selected filenames with inventory to get full URLs
+    for key, val in slides_data.items():
+        if "_IMAGE" in key.upper() and val:
+            # Check if it was a source image selection
+            match = next((iv for iv in visual_inventory if iv["filename"] == str(val).strip()), None)
+            if match:
+                slides_data[key] = match["url"]
+    
+    # Canonical structure for database 'posts' table and frontend
+    final_post = {
+        "id": f"post_ai_{datetime.now().strftime('%Y%m%d%H%M%S')}",
+        "status": "draft",
+        "niche": "AI Engineering",
+        "template": result_data.get("template_id", template_id), # support autonomous template override
+        "platforms": ["linkedin", "instagram_feed"],
+        "caption": result_data.get("caption", ""),
+        "content_name": result_data.get("content_name", "AI Draft"),
+        "slides_data": slides_data, 
+        "slides": slides_data, 
+        "raw_ref_ids": [a["id"] for a in articles],
+        "created_at": datetime.now().isoformat(),
+        "updated_at": datetime.now().isoformat()
+    }
+    
+    # Merge back any top-level keys from AI if they exist
+    for k, v in result_data.items():
+        if k not in final_post and k != "slides_data":
+            final_post[k] = v
+    
+    return final_post
 if __name__ == "__main__":
     import sys
     from datetime import datetime

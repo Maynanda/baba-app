@@ -27,10 +27,9 @@ async def create_ai_draft(body: DraftRequest):
     """
     target_ids = body.raw_ids if body.raw_ids else ([body.raw_id] if body.raw_id else [])
     
-    # In pro_mode, we allow empty IDs because the agent will scan the archive
-    if not target_ids and not body.pro_mode:
-        raise HTTPException(status_code=400, detail="No raw IDs provided.")
-
+    # The generator module handles empty target_ids autonomously (Freedom Mode)
+    # so we don't need to block here with a 400.
+    
     try:
         draft = generate_draft(target_ids, body.template_id, body.pro_mode)
         if not draft:

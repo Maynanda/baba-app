@@ -254,13 +254,25 @@ const ContentStudio: React.FC = () => {
       const detail = await fetchTemplate(post.template);
       setFullTemplate(detail);
       
+      const dataStr = typeof post.data_json === 'string' ? post.data_json : JSON.stringify(post.data_json);
+      const data = JSON.parse(dataStr);
+      
+      // Sync research library selections with this draft's references
+      if (data.raw_ref_ids && Array.isArray(data.raw_ref_ids)) {
+        setSelectedRawIds(data.raw_ref_ids);
+        if (data.raw_ref_ids.length > 0) {
+           const first = rawItems.find(r => r.id === data.raw_ref_ids[0]);
+           if (first) setViewingRaw(first);
+        }
+      }
+
       form.setFieldsValue({
         content_name: post.content_name,
         niche: post.niche,
         template: post.template,
         platform: JSON.parse(post.platforms || '["linkedin"]'),
         caption: post.caption,
-        ...(typeof post.data_json === 'string' ? JSON.parse(post.data_json).slides_data : post.data_json?.slides_data || {})
+        ...(data.slides_data || {})
       });
       setLiveValues(form.getFieldsValue());
       message.info(`Loaded draft: ${post.content_name}`);
@@ -270,7 +282,7 @@ const ContentStudio: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [form]);
+  }, [form, rawItems]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -413,7 +425,7 @@ const ContentStudio: React.FC = () => {
                      type="primary" 
                      shape="round" 
                      icon={<RobotOutlined />} 
-                     onClick={() => handleAiDraft(false)} 
+                     onClick={() => handleAiDraft(selectedRawIds.length === 0)} 
                      loading={isDrafting} 
                      style={{ 
                        fontSize: 10, 
