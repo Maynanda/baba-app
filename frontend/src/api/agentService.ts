@@ -25,13 +25,15 @@ interface DraftResponse {
 export const createAiDraft = async (
   rawIds: string | string[], 
   templateId: string = "carousel_dark_1x1",
-  proMode: boolean = false
+  proMode: boolean = false,
+  userDescription?: string
 ): Promise<any> => {
   const ids = Array.isArray(rawIds) ? rawIds : [rawIds];
   const resp = await apiClient.post<DraftResponse>('/agent/draft', {
     raw_ids: ids,
     template_id: templateId,
-    pro_mode: proMode
+    pro_mode: proMode,
+    user_description: userDescription
   });
   return resp.data.data;
 };

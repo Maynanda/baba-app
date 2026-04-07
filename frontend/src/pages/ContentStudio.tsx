@@ -5,16 +5,16 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Checkbox, Select, Button, Form, Input, Typography,
-  Space, message, Tag, Divider, Spin, Empty, Row, Col,
+  message, Tag, Divider, Spin, Empty, Row, Col,
 } from 'antd';
 import {
-  EditOutlined, SaveOutlined, RobotOutlined,
+  SaveOutlined, RobotOutlined,
   MenuFoldOutlined, MenuUnfoldOutlined, RightOutlined, LeftOutlined,
-  PictureOutlined, GlobalOutlined, DeleteOutlined
+  PictureOutlined, DeleteOutlined
 } from '@ant-design/icons';
 import apiClient from '../api/client';
 import {
@@ -40,12 +40,12 @@ function parseJson(s: string): Record<string, any> {
   try { return JSON.parse(s); } catch { return {}; }
 }
 
-const NicheSelect: React.FC<{ value?: string; onChange: (v: string) => void }> = ({ value, onChange }) => (
+const NicheSelect: React.FC<{ value?: string; onChange?: (v: string) => void }> = ({ value, onChange }) => (
   <Select
     mode="tags"
     placeholder="Niche"
     value={value ? [value] : []}
-    onChange={(vals) => onChange(vals[vals.length - 1])}
+    onChange={(vals) => onChange?.(vals[vals.length - 1])}
     style={{ width: '100%' }}
     maxCount={1}
     options={[
@@ -191,29 +191,11 @@ const ContentStudio: React.FC = () => {
   const [isDrafting, setIsDrafting] = useState(false);
   const [liveValues, setLiveValues] = useState<any>({});
   
+  const [aiIntent, setAiIntent] = useState('');
+
   // Panel States
-  const [listWidth, setListWidth] = useState(250);
-  const [inspectorWidth, setInspectorWidth] = useState(400);
-  const [previewWidth, setPreviewWidth] = useState(320);
   const [listCollapsed, setListCollapsed] = useState(false);
   const [previewCollapsed, setPreviewCollapsed] = useState(false);
-  const [suggestedStrategy, setSuggestedStrategy] = useState<any>(null);
-
-  const draggingRef = useRef<string | null>(null);
-  const hasAutoDrafted = useRef(false);
-
-  useEffect(() => {
-    const onMove = (e: MouseEvent) => {
-      if (!draggingRef.current) return;
-      if (draggingRef.current === 'list') setListWidth(Math.max(100, Math.min(400, e.clientX)));
-      if (draggingRef.current === 'inspector') setInspectorWidth(Math.max(200, Math.min(600, e.clientX - (listCollapsed?0:listWidth))));
-      if (draggingRef.current === 'preview') setPreviewWidth(Math.max(150, Math.min(500, window.innerWidth - e.clientX)));
-    };
-    const onUp = () => { draggingRef.current = null; document.body.style.cursor = 'default'; };
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
-    return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
-  }, [listWidth, inspectorWidth, listCollapsed]);
 
   const handleTemplateSelection = useCallback(async (tplId: string) => {
     try {
@@ -223,29 +205,47 @@ const ContentStudio: React.FC = () => {
     } catch { message.error('Template detail error'); }
   }, [form]);
 
-  const handleAiDraft = useCallback(async (proMode: boolean = false) => {
-    const tplId = form.getFieldValue('template');
-    if (!tplId && !proMode) return message.warning('Select a design template first.');
+  const handleAiDraft = useCallback(async (intentOverride?: string) => {
+    const tplId = form.getFieldValue('template') || "carousel_dark_1x1";
+    const description = intentOverride || aiIntent;
     
     setIsDrafting(true);
     try {
-      const res = await createAiDraft(selectedRawIds, tplId, proMode);
-      if (res.template) await handleTemplateSelection(res.template);
-      if (res.suggested_schema) setSuggestedStrategy(res.suggested_schema);
+      console.log("[Studio] Starting Magic Draft...", { selectedRawIds, tplId, description });
+      const res = await createAiDraft(selectedRawIds, tplId, true, description);
       
-      form.setFieldsValue({
-        content_name: res.content_name || 'Draft Post',
-        niche: res.niche,
-        template: res.template,
-        platform: res.platforms || ['linkedin'],
-        caption: res.caption,
-        ...res.slides_data,
-      });
+      if (!res) {
+        throw new Error("AI returned no draft data.");
+      }
+
+      console.log("[Studio] Magic Draft Received:", res);
+      
+      if (res.template) await handleTemplateSelection(res.template);
+      
+      // Map basic fields
+      const updateData: any = {
+        content_name: res.content_name || 'AI Generated Blueprint',
+        niche: res.niche || 'AI Engineering',
+        template: res.template || tplId,
+        platforms: res.platforms || ['linkedin'],
+        caption: res.caption || '',
+      };
+
+      // Spread slides data (flattened or nested)
+      const slides = res.slides_data || res.slides || {};
+      Object.assign(updateData, slides);
+
+      form.setFieldsValue(updateData);
       setLiveValues(form.getFieldsValue());
-      message.success(proMode ? "AI designed a custom layout and synthesis!" : `AI Synthesized from ${selectedRawIds.length} sources!`);
-    } catch { message.error('Magic Draft failed.'); }
-    finally { setIsDrafting(false); }
-  }, [form, selectedRawIds, handleTemplateSelection]);
+      
+      message.success("AI Content Architect has drafted your blueprint!");
+    } catch (err: any) {
+      console.error("[Studio] AI Drafting Error:", err);
+      message.error(`Drafting failed: ${err.message || 'Unknown Error'}`);
+    } finally {
+      setIsDrafting(false);
+    }
+  }, [form, selectedRawIds, aiIntent, handleTemplateSelection]);
 
   const handleLoadPost = useCallback(async (post: any) => {
     setLoading(true);
@@ -257,13 +257,8 @@ const ContentStudio: React.FC = () => {
       const dataStr = typeof post.data_json === 'string' ? post.data_json : JSON.stringify(post.data_json);
       const data = JSON.parse(dataStr);
       
-      // Sync research library selections with this draft's references
       if (data.raw_ref_ids && Array.isArray(data.raw_ref_ids)) {
         setSelectedRawIds(data.raw_ref_ids);
-        if (data.raw_ref_ids.length > 0) {
-           const first = rawItems.find(r => r.id === data.raw_ref_ids[0]);
-           if (first) setViewingRaw(first);
-        }
       }
 
       form.setFieldsValue({
@@ -282,7 +277,7 @@ const ContentStudio: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [form, rawItems]);
+  }, [form]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -296,22 +291,18 @@ const ContentStudio: React.FC = () => {
       setTemplates(t);
       setSavedPosts(p);
       
-      let initialTemplateId = t[0]?.id;
-      if (initialTemplateId && !editingId) {
-        await handleTemplateSelection(initialTemplateId);
-      }
+      if (t[0] && !editingId) await handleTemplateSelection(t[0].id);
 
-      if (rawIdFromUrl && !hasAutoDrafted.current) {
+      if (rawIdFromUrl) {
         const item = r.find(it => it.id === rawIdFromUrl);
         if (item) {
           setViewingRaw(item);
           setSelectedRawIds([item.id]);
-          setTimeout(() => { handleAiDraft(); hasAutoDrafted.current = true; }, 1000);
         }
       }
     } catch { message.error('Data loading error'); }
     finally { setLoading(false); }
-  }, [rawIdFromUrl, handleTemplateSelection, handleAiDraft, editingId]);
+  }, [rawIdFromUrl, handleTemplateSelection, editingId]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -336,10 +327,9 @@ const ContentStudio: React.FC = () => {
         raw_ref_ids: selectedRawIds,
       };
       await apiClient.post('/data/content', payload);
-      message.success(editingId ? 'Draft updated!' : 'Post saved to pipeline!');
+      message.success(editingId ? 'Draft updated!' : 'Post saved!');
       loadData();
     } catch (err) {
-      console.error('Save failed:', err);
       message.error('Check required fields.');
     }
   };
@@ -353,226 +343,164 @@ const ContentStudio: React.FC = () => {
   });
 
   return (
-    <div style={{
-      height: 'calc(100vh - 56px)',
-      width: '100vw',
-      display: 'flex',
-      background: '#f8fafc',
-      overflow: 'hidden',
-    }}>
-      {/* ── Panel 1: List (Nav) ── */}
-      <div style={{ width: listCollapsed ? 48 : listWidth, transition: 'width 0.2s', background: '#fff', borderRight: '1px solid #e5e7eb', flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
-        <div style={{ padding: '12px', borderBottom: '1px solid #f1f5f9', textAlign: 'center', display: 'flex', justifyContent: 'space-between' }}>
-          {!listCollapsed && <Text strong style={{ fontSize: 10, letterSpacing: 1 }}>CONTENT LIBRARY</Text>}
+    <div style={{ height: 'calc(100vh - 56px)', display: 'flex', background: '#f8fafc', overflow: 'hidden' }}>
+      {/* LEFT: LIBRARY */}
+      <div style={{ width: listCollapsed ? 48 : 260, transition: 'width 0.2s', background: '#fff', borderRight: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ padding: 12, borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between' }}>
+          {!listCollapsed && <Text strong style={{ fontSize: 11, letterSpacing: 1 }}>LIBRARY</Text>}
           <Button type="text" size="small" icon={listCollapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />} onClick={() => setListCollapsed(!listCollapsed)} />
         </div>
         {!listCollapsed && (
           <>
             <SidebarTab active={sidebarTab} onChange={setSidebarTab} />
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div style={{ flex: 1, overflow: 'hidden' }}>
               {sidebarTab === 'research' ? (
-                <SourceBrowser 
-                  items={rawItems} 
-                  loading={loading} 
-                  selectedIds={selectedRawIds} 
-                  onToggle={(id) => {
-                    setSelectedRawIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
-                  }} 
-                  onView={setViewingRaw} 
-                />
+                <SourceBrowser items={rawItems} loading={loading} selectedIds={selectedRawIds} onToggle={(id) => setSelectedRawIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])} onView={setViewingRaw} />
               ) : (
-                <PipelineBrowser 
-                  items={savedPosts} 
-                  onLoad={handleLoadPost} 
-                  onDelete={async (id) => {
-                    await apiClient.delete(`/data/content/${id}`);
-                    loadData();
-                  }} 
-                />
+                <PipelineBrowser items={savedPosts} onLoad={handleLoadPost} onDelete={async (id) => { await apiClient.delete(`/data/content/${id}`); loadData(); }} />
               )}
             </div>
           </>
         )}
       </div>
-      {!listCollapsed && <div onMouseDown={() => { draggingRef.current = 'list'; document.body.style.cursor = 'col-resize'; }} style={{ width: 4, cursor: 'col-resize', zIndex: 100 }} />}
 
-      {/* ── Panel 2: Inspector (Reader) ── */}
-      <div style={{ width: inspectorWidth, background: '#fff', borderRight: '1px solid #e5e7eb', flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
-        {viewingRaw ? (
-          <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ padding: '12px 16px', borderBottom: '1px solid #f1f5f9', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-               <Title level={5} style={{ margin: 0, fontSize: 10, letterSpacing: 1, color: '#64748b' }}>
-                 {selectedRawIds.length > 0 ? `RESEARCH INSPECTOR (${selectedRawIds.length})` : 'AI FREEDOM MODE'}
-               </Title>
-                <Space>
-                   <Button 
-                     size="small" 
-                     className="pro-draft-btn"
-                     icon={<PictureOutlined />} 
-                     onClick={() => handleAiDraft(true)} 
-                     loading={isDrafting}
-                     style={{ 
-                       fontSize: 10, 
-                       borderColor: '#10b981', 
-                       color: '#059669',
-                       fontWeight: 600
-                     }}
-                   >
-                     AUTO-DESIGN
-                   </Button>
-                   <Button 
-                     size="small" 
-                     type="primary" 
-                     shape="round" 
-                     icon={<RobotOutlined />} 
-                     onClick={() => handleAiDraft(selectedRawIds.length === 0)} 
-                     loading={isDrafting} 
-                     style={{ 
-                       fontSize: 10, 
-                       background: selectedRawIds.length === 0 ? '#10b981' : '#6366f1',
-                       border: 'none'
-                     }}
-                   >
-                     {selectedRawIds.length === 0 ? 'AI FREEDOM DRAFT' : 'MAGIC DRAFT'}
-                   </Button>
-                </Space>
-            </div>
-            {(() => {
-                const p = parseJson(viewingRaw.data_json);
-                const url = p.source_url || "";
-                return (
-                  <div style={{ padding: '6px 16px', background: '#f0f9ff', borderBottom: '1px solid #bae6fd', display: 'flex', alignItems: 'center', gap: 8 }}>
-                     <GlobalOutlined style={{ color: '#0369a1', fontSize: 12 }} />
-                     <Text ellipsis style={{ fontSize: 10, color: '#0369a1', flex: 1 }}>{url}</Text>
-                     <Button type="link" size="small" href={url} target="_blank" style={{ fontSize: 10, height: 20, padding: 0 }}>Review Site</Button>
-                  </div>
-                );
-            })()}
+      {/* CENTER: ARCHITECT */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {/* TOP: AI ORCHESTRATOR */}
+        <div style={{ padding: '20px 40px', background: '#fff', borderBottom: '1px solid #e2e8f0' }}>
+          <Title level={5} style={{ fontSize: 12, color: '#64748b', marginBottom: 12 }}>TALK WITH AI (CONTENT ARCHITECT)</Title>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <Input 
+              size="large" 
+              placeholder="What should we build today?"
+              value={aiIntent}
+              onChange={e => setAiIntent(e.target.value)}
+              onPressEnter={() => handleAiDraft()}
+              prefix={<RobotOutlined style={{ color: '#6366f1' }} />}
+              style={{ borderRadius: 8 }}
+            />
+            <Button size="large" type="primary" icon={<RobotOutlined />} onClick={() => handleAiDraft()} loading={isDrafting} style={{ borderRadius: 8, background: '#6366f1' }}>
+              Magic Draft
+            </Button>
+          </div>
+          {selectedRawIds.length > 0 && (
+             <div style={{ marginTop: 8 }}>
+               <Text type="secondary" style={{ fontSize: 11 }}>Using context from <b>{selectedRawIds.length} selected items</b>. Clear them to let AI search autonomously.</Text>
+             </div>
+          )}
+        </div>
 
-            <div style={{ flex: 1, overflowY: 'auto', padding: 24 }}>
-              <Title level={4} style={{ fontSize: 18, marginBottom: 20, fontWeight: 700, lineHeight: 1.4 }}>{viewingRaw.title}</Title>
-              {(() => {
-                const p = parseJson(viewingRaw.data_json);
-                const imgs = [...(p.local_images?.map((im: string) => getRawImageUrl(viewingRaw.id, im)) || []), ...(p.image_urls || [])];
-                return (
-                  <>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, marginBottom: 24 }}>
+        {/* WORKSPACE */}
+        <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+          {/* INSPECTOR (Research Intelligence) */}
+          {viewingRaw && (
+            <div style={{ width: 360, background: '#f8fafc', borderRight: '1px solid #e2e8f0', overflowY: 'auto', padding: 20 }}>
+               <Title level={5} style={{ fontSize: 10, color: '#64748b', letterSpacing: 1, marginBottom: 16 }}>RESEARCH INSPECTOR</Title>
+               <Title level={4} style={{ fontSize: 16, fontWeight: 700, marginBottom: 20, lineHeight: 1.4 }}>{viewingRaw.title}</Title>
+               
+               {/* VISUAL ASSETS GRID */}
+               {(() => {
+                 const p = parseJson(viewingRaw.data_json);
+                 const imgs = [
+                   ...(p.local_images?.map((im: string) => getRawImageUrl(viewingRaw.id, im)) || []),
+                   ...(p.image_urls || [])
+                 ];
+                 
+                 if (imgs.length === 0) return null;
+                 
+                 return (
+                   <div style={{ marginBottom: 24 }}>
+                     <Text strong style={{ fontSize: 10, color: '#64748b', display: 'block', marginBottom: 8 }}>EXTRACTED ASSETS ({imgs.length})</Text>
+                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
                        {imgs.slice(0, 10).map((src: string, i: number) => (
-                         <div key={i} style={{ position: 'relative', borderRadius: 12, overflow: 'hidden', border: '1px solid #e2e8f0', background: '#fff' }}>
-                           <img src={src} style={{ width: '100%', height: 110, objectFit: 'cover' }} />
-                           <div style={{ padding: '6px', background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(4px)', display: 'flex', gap: 4, flexWrap: 'wrap', justifyContent: 'center' }}>
-                              {placeholders.filter(p => p.includes('IMAGE')).map(p => (
-                                <Button 
-                                  key={p} 
-                                  size="small" 
-                                  type="text" 
-                                  style={{ fontSize: 9, padding: '0 4px', height: 20, color: '#6366f1' }}
-                                  onClick={() => {
-                                    form.setFieldValue(p, src);
-                                    setLiveValues(form.getFieldsValue());
-                                    message.success(`Image applied to ${p}`);
-                                  }}
-                                >
-                                  +{p.split('_')[0]}
-                                </Button>
-                              ))}
+                         <div key={i} style={{ position: 'relative', borderRadius: 8, overflow: 'hidden', border: '1px solid #e2e8f0', background: '#fff' }}>
+                           <img src={src} style={{ width: '100%', height: 90, objectFit: 'cover' }} alt="Asset" />
+                           <div style={{ padding: '4px', background: 'rgba(255,255,255,0.95)', borderTop: '1px solid #f1f5f9', display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'center' }}>
+                             {placeholders.filter(p => p.includes('IMAGE')).map(p => (
+                               <Button 
+                                 key={p} 
+                                 size="small" 
+                                 type="text" 
+                                 style={{ fontSize: 8, padding: '0 4px', height: 18, color: '#6366f1', fontWeight: 600 }}
+                                 onClick={() => {
+                                   form.setFieldValue(p, src);
+                                   setLiveValues(form.getFieldsValue());
+                                   message.success(`Applied to ${p}`);
+                                 }}
+                               >
+                                 +{p.split('_')[0]}
+                               </Button>
+                             ))}
                            </div>
                          </div>
                        ))}
-                    </div>
-                    <div style={{ whiteSpace: 'pre-wrap', fontSize: 14, lineHeight: 1.8, color: '#334155', background: '#f8fafc', padding: 20, borderRadius: 12, border: '1px solid #f1f5f9' }}>
-                      {p.body || "No research text available for this item."}
-                    </div>
-                  </>
-                );
-              })()}
-            </div>
-          </div>
-        ) : <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Empty description="Select Article to View" /></div>}
-      </div>
-      <div onMouseDown={() => { draggingRef.current = 'inspector'; document.body.style.cursor = 'col-resize'; }} style={{ width: 4, cursor: 'col-resize', zIndex: 100 }} />
-
-      {/* ── Panel 3: Editor (Workspace) ── */}
-      <div style={{ flex: 1, background: '#fff', display: 'flex', flexDirection: 'column', minWidth: 400 }}>
-        <div style={{ padding: '12px 24px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Space>
-            <EditOutlined style={{ color: '#6366f1' }} />
-            <Text strong>{editingId ? `Editing Post: ${editingId.slice(-6)}` : 'Authoring Studio'}</Text>
-            {editingId && <Button size="small" type="text" onClick={() => { setEditingId(null); form.resetFields(); }} style={{ fontSize: 10 }}>NEW</Button>}
-          </Space>
-          <Button type="primary" icon={<SaveOutlined />} onClick={onSave} style={{ borderRadius: 6 }}>
-            {editingId ? 'Update Draft' : 'Save to Pipeline'}
-          </Button>
-        </div>
-        <div style={{ flex: 1, padding: '32px 40px', overflowY: 'auto' }}>
-          <Form form={form} layout="vertical" onValuesChange={(_, all) => setLiveValues(all)}>
-            <div style={{ maxWidth: 720 }}>
-              {suggestedStrategy && (
-                <div style={{ marginBottom: 24, padding: 16, background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 12 }}>
-                  <Space><RobotOutlined style={{ color: '#0369a1' }} /><Text strong style={{ color: '#0369a1' }}>AI DESIGN STRATEGY</Text></Space>
-                  <div style={{ marginTop: 8, fontSize: 13, color: '#0369a1' }}>
-                    <b>Slide Blueprint:</b> {suggestedStrategy.optimal_slide_count} slides ({suggestedStrategy.best_visual_strategy})<br/>
-                    <b>Strategic Rationale:</b> {suggestedStrategy.reason}
-                  </div>
-                </div>
-              )}
-              <Row gutter={16}>
-                <Col span={8}><Form.Item name="content_name" label="Project Title (Internal)" required><Input placeholder="e.g. AI Strategy Post" /></Form.Item></Col>
-                <Col span={8}><Form.Item name="niche" label="Niche" required><NicheSelect value={form.getFieldValue('niche')} onChange={v => form.setFieldValue('niche', v)} /></Form.Item></Col>
-                <Col span={8}><Form.Item name="template" label="Design Template" required><Select onChange={handleTemplateSelection}>{templates.map(t => <Option key={t.id} value={t.id}>{t.name}</Option>)}</Select></Form.Item></Col>
-              </Row>
-              <Form.Item name="platform" label="Publishing Platforms" initialValue={['linkedin']}>
-                <Select mode="multiple">
-                  <Option value="linkedin">LinkedIn Carousel</Option>
-                  <Option value="instagram">Instagram Carousel</Option>
-                  <Option value="tiktok">TikTok Slides</Option>
-                </Select>
-              </Form.Item>
-              <Divider />
-              {Object.entries(groups).map(([group, fields]) => (
-                <div key={group} style={{ marginBottom: 32 }}>
-                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                      <Tag color="blue" style={{ borderRadius: 4 }}>SECTION: {group}</Tag>
-                      <Divider style={{ flex: 1, margin: 0 }} />
+                     </div>
+                     <Divider style={{ margin: '20px 0' }} />
                    </div>
-                  {fields.map(field => {
-                    const isImg = field.toUpperCase().includes('IMAGE');
-                    return (
-                      <Form.Item key={field} name={field} label={field.replace(`${group}_`, '')} style={{ marginTop: 12 }}>
-                        {isImg ? <Input prefix={<PictureOutlined />} placeholder="Image URL..." /> : 
-                         (field.includes('TEXT') || field.includes('BODY') ? <TextArea rows={2} autoSize={{ minRows: 2, maxRows: 6 }} /> : <Input />)}
-                      </Form.Item>
-                    );
-                  })}
-                </div>
-              ))}
-              <Form.Item name="caption" label="Social Caption"><TextArea rows={4} /></Form.Item>
+                 );
+               })()}
+
+               <div style={{ fontSize: 13, color: '#475569', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
+                 {parseJson(viewingRaw.data_json).body || "No textual context extracted for this source."}
+               </div>
             </div>
-          </Form>
+          )}
+
+          {/* EDITOR */}
+          <div style={{ flex: 1, padding: '32px 60px', overflowY: 'auto', background: '#fff' }}>
+            <Form form={form} layout="vertical" onValuesChange={(_, all) => setLiveValues(all)}>
+               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 24 }}>
+                 <Title level={4} style={{ margin: 0 }}>Slide Blueprint</Title>
+                 <Button type="primary" icon={<SaveOutlined />} onClick={onSave}>{editingId ? 'Update Draft' : 'Save Pipeline'}</Button>
+               </div>
+               <Row gutter={16}>
+                <Col span={12}><Form.Item name="content_name" label="Project Title"><Input /></Form.Item></Col>
+                <Col span={6}><Form.Item name="template" label="Template"><Select onChange={handleTemplateSelection}>{templates.map(t => <Option key={t.id} value={t.id}>{t.name}</Option>)}</Select></Form.Item></Col>
+                <Col span={6}><Form.Item name="niche" label="Niche"><NicheSelect /></Form.Item></Col>
+               </Row>
+               <Divider />
+               {Object.entries(groups).map(([group, fields]) => (
+                 <div key={group} style={{ marginBottom: 20 }}>
+                   <Tag color="blue" style={{ marginBottom: 12 }}>SECTION: {group}</Tag>
+                   {fields.map(field => {
+                     const isImg = field.toUpperCase().includes('IMAGE');
+                     return (
+                       <Form.Item key={field} name={field} label={field.replace(`${group}_`, '')}>
+                         {isImg ? <Input prefix={<PictureOutlined />} /> : (field.includes('TEXT') || field.includes('BODY') ? <TextArea autoSize /> : <Input />)}
+                       </Form.Item>
+                     );
+                   })}
+                 </div>
+               ))}
+               <Form.Item name="caption" label="Social Caption"><TextArea rows={4} /></Form.Item>
+            </Form>
+          </div>
         </div>
       </div>
 
-      <div onMouseDown={() => { draggingRef.current = 'preview'; document.body.style.cursor = 'col-resize'; }} style={{ width: 4, cursor: 'col-resize', zIndex: 100 }} />
-
-      {/* ── Panel 4: Preview ── */}
-      <div style={{ width: previewCollapsed ? 48 : previewWidth, transition: 'width 0.2s', background: '#f8fafc', borderLeft: '1px solid #e5e7eb', flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
-        <div style={{ padding: '12px', borderBottom: '1px solid #e2e8f0', textAlign: 'center', background: '#fff' }}>
-           <Button type="text" size="small" icon={previewCollapsed ? <LeftOutlined /> : <RightOutlined />} onClick={() => setPreviewCollapsed(!previewCollapsed)} />
+      {/* RIGHT: PREVIEW */}
+      <div style={{ width: previewCollapsed ? 48 : 340, transition: 'width 0.2s', background: '#f8fafc', borderLeft: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ padding: 12, borderBottom: '1px solid #f1f5f9', textAlign: 'center' }}>
+          <Button type="text" size="small" icon={previewCollapsed ? <LeftOutlined /> : <RightOutlined />} onClick={() => setPreviewCollapsed(!previewCollapsed)} />
         </div>
         {!previewCollapsed && (
           <div style={{ flex: 1, padding: 20, overflowY: 'auto' }}>
             {Object.keys(groups).map((group, idx) => (
-              <div key={idx} style={{ background: fullTemplate?.colors?.primary || '#1e293b', color: fullTemplate?.colors?.text || '#fff', padding: 24, borderRadius: 16, marginBottom: 16, position: 'relative', overflow: 'hidden', minHeight: 220, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <div key={idx} style={{ background: fullTemplate?.colors?.primary || '#1e293b', color: fullTemplate?.colors?.text || '#fff', padding: 24, borderRadius: 16, marginBottom: 16, minHeight: 220, position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                 {(() => {
                   const img = groups[group].find(f => f.toUpperCase().includes('IMAGE'));
                   const src = img ? liveValues[img] : null;
-                  return src ? <img src={src} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.2 }} /> : null;
+                  return src ? (
+                    <img 
+                      src={src} 
+                      style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.25 }} 
+                      alt="Slide Background"
+                    />
+                  ) : null;
                 })()}
                 <div style={{ position: 'relative', zIndex: 1 }}>
                   {groups[group].map(f => !f.toUpperCase().includes('IMAGE') && (
-                    <div key={f} style={{ marginBottom: 6 }}>
-                       {f.includes('TITLE') ? <div style={{ fontSize: 16, fontWeight: 800 }}>{liveValues[f] || f}</div> : <div style={{ fontSize: 11, opacity: 0.9 }}>{liveValues[f] || '...'}</div>}
-                    </div>
+                    <div key={f} style={f.includes('TITLE') ? { fontSize: 16, fontWeight: 800 } : { fontSize: 11, opacity: 0.9, marginTop: 4 }}>{liveValues[f] || (f.includes('TITLE') ? f : '...')}</div>
                   ))}
                 </div>
               </div>

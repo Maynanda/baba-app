@@ -19,50 +19,55 @@ class DraftRequest(BaseModel):
     raw_ids: Optional[List[str]] = None
     template_id: str = "carousel_dark_1x1"
     pro_mode: bool = False
+    user_description: Optional[str] = None
 
 class DesignRequest(BaseModel):
     description: str
 
 @router.post("/draft")
 async def create_ai_draft(body: DraftRequest):
-    ...
-
-@router.post("/design")
-async def create_ai_template_design(body: DesignRequest):
     """
-    Experimental: AI-generated template schema from description.
-    """
-    try:
-        design = generate_template_design(body.description)
-        if not design:
-            raise HTTPException(status_code=500, detail="AI Design failed.")
-        return {
-            "status": "success",
-            "data": design
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    """
-    Trigger AI drafting for one or more raw content items.
+    Trigger AI drafting for one or more raw content items, or via user description.
     """
     target_ids = body.raw_ids if body.raw_ids else ([body.raw_id] if body.raw_id else [])
     
-    # The generator module handles empty target_ids autonomously (Freedom Mode)
-    # so we don't need to block here with a 400.
-    
     try:
-        draft = generate_draft(target_ids, body.template_id, body.pro_mode)
+        # Pass description to the synthesis engine
+        draft = generate_draft(
+            target_ids, 
+            body.template_id, 
+            pro_mode=body.pro_mode,
+            user_description=body.user_description
+        )
         if not draft:
             raise HTTPException(status_code=500, detail="AI generation failed. Check server logs.")
         
         # Save to database
-        # generate_draft already returns a dict compatible with save_post
         save_post(draft)
         
         return {
             "status": "success",
             "message": "AI draft created and saved to pipeline.",
             "data": draft
+        }
+    except Exception as e:
+        import traceback
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/design")
+async def create_ai_template_design(body: DesignRequest):
+    """
+    Trigger AI design for a new template schema.
+    """
+    try:
+        design = generate_template_design(body.description)
+        if not design:
+             raise HTTPException(status_code=500, detail="AI design failed.")
+        return {
+            "status": "success",
+            "message": "AI template design created.",
+            "data": design
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

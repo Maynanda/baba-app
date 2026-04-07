@@ -87,9 +87,58 @@ def list_recent_trends() -> str:
         return f"Error scanning trends: {e}"
 
 # Mapping for AFC (Automatic Function Calling)
+
+import sqlite3
+from typing import List, Dict
+
+DB_PATH = "data/baba_app.sqlite"
+
+def search_research(query: str, limit: int = 5) -> List[Dict]:
+    """
+    Search the local research database for articles matching a query keyword.
+    Use this to find relevant context for a user's request.
+    """
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        # Simple keyword search on title and content
+        search_sql = "SELECT id, title, source_name, created_at FROM raw_content WHERE title LIKE ? OR content LIKE ? ORDER BY created_at DESC LIMIT ?"
+        like_q = f"%{query}%"
+        cursor.execute(search_sql, (like_q, like_q, limit))
+        results = [dict(row) for row in cursor.fetchall()]
+        conn.close()
+        return results
+    except Exception as e:
+        return [{"error": str(e)}]
+
+def get_research_content(article_ids: List[str]) -> List[Dict]:
+    """
+    Fetch the full text body and metadata for specific articles.
+    Essential for reading the context before drafting.
+    """
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        placeholders = ', '.join(['?'] * len(article_ids))
+        cursor.execute(f"SELECT * FROM raw_content WHERE id IN ({placeholders})", article_ids)
+        results = [dict(row) for row in cursor.fetchall()]
+        conn.close()
+        return results
+    except Exception as e:
+        return [{"error": str(e)}]
+
+# --- Existing Template Tools ---
+# (Keeping register_custom_template, etc. but adding the new Search tools)
+
 AVAILABLE_TOOLS = {
     "register_custom_template": register_custom_template,
     "get_template_schema": get_template_schema,
     "list_all_templates": list_all_templates,
-    "list_recent_trends": list_recent_trends
+    "list_recent_trends": list_recent_trends,
+    "search_research": search_research,
+    "get_research_content": get_research_content
 }

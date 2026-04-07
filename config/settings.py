@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Load .env (Standard: Root folder only)
-load_dotenv(BASE_DIR / ".env")
+load_dotenv(BASE_DIR / ".env", override=True)
 
 # ── Paths ─────────────────────────────────────────────────────
 DATA_DIR         = BASE_DIR / "data"
@@ -54,8 +54,9 @@ REDDIT_USER_AGENT     = os.getenv("REDDIT_USER_AGENT", "baba-app/1.0")
 # ── LLM ───────────────────────────────────────────────────────
 OPENAI_API_KEY        = os.getenv("OPENAI_API_KEY", "")
 ANTHROPIC_API_KEY     = os.getenv("ANTHROPIC_API_KEY", "")
-GEMINI_API_KEY        = os.getenv("GEMINI_API_KEY", "")
-GEMINI_MODEL          = os.getenv("GEMINI_MODEL", "models/gemini-3-flash-preview")
+# Check both GEMINI_API_KEY and GOOGLE_API_KEY
+GEMINI_API_KEY        = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY", "")
+GEMINI_MODEL          = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
 
 # ── App ───────────────────────────────────────────────────────
 DEFAULT_NICHE    = os.getenv("DEFAULT_NICHE", "ai-engineering")
