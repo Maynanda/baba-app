@@ -1,0 +1,50 @@
+{
+  "id": "minimalist-image-caption-v1",
+  "name": "Minimalist Image Focus",
+  "platforms": [
+    "linkedin",
+    "instagram_feed"
+  ],
+  "aspect_ratio": "4:5",
+  "niche": [
+    "photography",
+    "lifestyle",
+    "creative-portfolio",
+    "minimalism"
+  ],
+  "description": "A high-end, visual-first template designed for seamless image selection with elegant text overlays and caption placement.",
+  "placeholders": [
+    "HOOK_IMAGE",
+    "HOOK_TEXT_OVERLAY",
+    "BODY_IMAGE_1",
+    "BODY_CAPTION_1",
+    "BODY_IMAGE_2",
+    "BODY_TEXT_EMBED",
+    "CTA_IMAGE",
+    "CTA_TEXT_FINAL"
+  ],
+  "slides": [
+    {
+      "index": 0,
+      "type": "hook",
+      "layout": "full_image_overlay"
+    },
+    {
+      "index": 1,
+      "type": "body",
+      "layout": "image_top_caption_bottom"
+    },
+    {
+      "index": 2,
+      "type": "body",
+      "layout": "image_full_embed_text"
+    },
+    {
+      "index": 3,
+      "type": "cta",
+      "layout": "minimal_image_split_cta"
+    }
+  ],
+  "colors": {},
+  "status": "draft"
+}

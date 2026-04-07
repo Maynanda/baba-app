@@ -35,3 +35,8 @@ export const createAiDraft = async (
   });
   return resp.data.data;
 };
+/** POST /api/agent/design — generate an AI template from description */
+export const createAiDesign = async (description: string): Promise<any> => {
+  const resp = await apiClient.post<any>('/agent/design', { description });
+  return resp.data.data;
+};

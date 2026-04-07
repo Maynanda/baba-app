@@ -198,20 +198,31 @@ def generate_draft(raw_ids: list[str], template_id: str = "carousel_dark_1x1", p
     # 3. Agentic Execution Loop (Manual Orchestration)
     if not pro_mode:
         # LEGACY/SIMPLE PATH: Standard Magic Draft
-        try:
-            logger.info(f"[agent] Standard synthesis with {MODEL_NAME}...")
-            response = client.models.generate_content(
-                model=MODEL_NAME,
-                contents=[prompt],
-                config=types.GenerateContentConfig(
-                    temperature=0.7,
-                    response_mime_type="text/plain",
+        max_retries = 3
+        retry_delay = 2
+        for attempt in range(max_retries):
+            try:
+                logger.info(f"[agent] Standard synthesis with {MODEL_NAME} (attempt {attempt+1})...")
+                response = client.models.generate_content(
+                    model=MODEL_NAME,
+                    contents=[prompt],
+                    config=types.GenerateContentConfig(
+                        temperature=0.7,
+                        response_mime_type="text/plain",
+                    )
                 )
-            )
-        except Exception as e:
-            logger.error(f"[agent] Standard Gemini synthesis failed: {e}")
-            logger.error(traceback.format_exc())
-            return None
+                break
+            except Exception as e:
+                err_str = str(e).upper()
+                if ("503" in err_str or "UNAVAILABLE" in err_str or "HIGH DEMAND" in err_str) and attempt < max_retries - 1:
+                    wait_time = retry_delay * (2 ** attempt) + (random.uniform(0, 1))
+                    logger.warning(f"[agent] Gemini Busy (503). Retrying in {wait_time:.1f}s... (Attempt {attempt+1}/{max_retries})")
+                    time.sleep(wait_time)
+                    continue
+                else:
+                    logger.error(f"[agent] Standard Gemini synthesis failed: {e}")
+                    logger.error(traceback.format_exc())
+                    return None
     else:
         # ORCHESTRATION PATH: Pro Mode with Manual Agentic Loop
         tool_declarations = list(AVAILABLE_TOOLS.values())
@@ -379,7 +390,82 @@ def generate_draft(raw_ids: list[str], template_id: str = "carousel_dark_1x1", p
         if k not in final_post and k != "slides_data":
             final_post[k] = v
     
+
     return final_post
+
+def generate_template_design(description: str) -> Optional[dict]:
+    """
+    Experimental Agent: Designs a new carousel template schema based on a text description.
+    """
+    prompt = f"""
+    SYSTEM: You are a Lead UI/UX Designer for the Baba-App Carousel platform.
+    TASK: Design a complete JSON schema for a new carousel template based on the user's description.
+    
+    TIPS FOR SUCCESS:
+    1. Select a high-end color palette (background, accent_primary, text_primary).
+    2. Define logical placeholders (e.g., HOOK_TITLE, BODY_1_SUB, BODY_3_CHART).
+    3. Determine the structure (Hook, Body, CTA).
+    
+    USER DESCRIPTION: "{description}"
+    
+    OUTPUT FORMAT (STRICT JSON ONLY):
+    {{
+      "id": "slug_style_id",
+      "name": "Human Readable Name",
+      "aspect_ratio": "1:1" or "4:5",
+      "platforms": ["linkedin", "instagram_feed"],
+      "niche": ["e.g., tech-news", "business"],
+      "status": "draft",
+      "description": "Short explanation of the intent",
+      "placeholders": ["P1", "P2", ...],
+      "slides": [
+        {{ "index": 0, "type": "hook" }},
+        {{ "index": 1, "type": "body" }},
+        ...
+      ],
+      "colors": {{
+        "background": "#HEX",
+        "accent_primary": "#HEX",
+        "text_primary": "#HEX",
+        "text_secondary": "#HEX"
+      }}
+    }}
+    """
+
+    import time
+    import random
+    max_retries = 3
+    retry_delay = 2
+    
+    for attempt in range(max_retries):
+        try:
+            logger.info(f"[design_agent] Designing template for: {description} (attempt {attempt+1})...")
+            response = client.models.generate_content(
+                model=MODEL_NAME,
+                contents=[prompt],
+                config=types.GenerateContentConfig(
+                    temperature=0.8,
+                    response_mime_type="application/json",
+                )
+            )
+            
+            if not response.text:
+                return None
+                
+            return json.loads(response.text)
+            
+        except Exception as e:
+            err_str = str(e).upper()
+            if ("503" in err_str or "UNAVAILABLE" in err_str or "HIGH DEMAND" in err_str) and attempt < max_retries - 1:
+                wait_time = retry_delay * (2 ** attempt) + (random.uniform(0, 1))
+                logger.warning(f"[design_agent] Gemini Busy (503). Retrying in {wait_time:.1f}s... (Attempt {attempt+1})")
+                time.sleep(wait_time)
+                continue
+            else:
+                logger.error(f"[design_agent] Design failed: {e}")
+                logger.error(traceback.format_exc())
+                return None
+    return None
 if __name__ == "__main__":
     import sys
     from datetime import datetime

@@ -9,7 +9,7 @@ from fastapi import APIRouter, BackgroundTasks, HTTPException
 from pydantic import BaseModel
 from typing import Optional, List
 
-from agent.generator import generate_draft
+from agent.generator import generate_draft, generate_template_design
 from src.database import save_post
 
 router = APIRouter()
@@ -20,8 +20,28 @@ class DraftRequest(BaseModel):
     template_id: str = "carousel_dark_1x1"
     pro_mode: bool = False
 
+class DesignRequest(BaseModel):
+    description: str
+
 @router.post("/draft")
 async def create_ai_draft(body: DraftRequest):
+    ...
+
+@router.post("/design")
+async def create_ai_template_design(body: DesignRequest):
+    """
+    Experimental: AI-generated template schema from description.
+    """
+    try:
+        design = generate_template_design(body.description)
+        if not design:
+            raise HTTPException(status_code=500, detail="AI Design failed.")
+        return {
+            "status": "success",
+            "data": design
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
     """
     Trigger AI drafting for one or more raw content items.
     """

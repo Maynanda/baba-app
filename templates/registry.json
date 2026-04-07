@@ -173,6 +173,22 @@
         "data-science"
       ],
       "status": "active"
+    },
+    {
+      "id": "minimalist-image-caption-v1",
+      "name": "Minimalist Image Focus",
+      "platforms": [
+        "linkedin",
+        "instagram_feed"
+      ],
+      "aspect_ratio": "4:5",
+      "niche": [
+        "photography",
+        "lifestyle",
+        "creative-portfolio",
+        "minimalism"
+      ],
+      "status": "draft"
     }
   ]
 }

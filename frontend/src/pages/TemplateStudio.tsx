@@ -21,6 +21,7 @@ import {
   BuildOutlined
 } from '@ant-design/icons';
 import { fetchTemplates, fetchTemplate, saveTemplate, type TemplateDetail } from '../api/generatorService';
+import { createAiDesign } from '../api/agentService';
 
 const { Title, Text } = AntTypography;
 const { Option } = Select;
@@ -37,7 +38,30 @@ const TemplateStudio: React.FC = () => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [activeTemplate, setActiveTemplate] = useState<TemplateDetail | null>(null);
   const [saving, setSaving] = useState(false);
+  const [designing, setDesigning] = useState(false);
+  const [aiDescription, setAiDescription] = useState('');
   const [form] = Form.useForm();
+
+  // ── Handlers ──────────────────────────────────────────────────────────────
+
+  const handleMagicDesign = async () => {
+    if (!aiDescription.trim()) return;
+    setDesigning(true);
+    try {
+      const design = await createAiDesign(aiDescription);
+      setSelectedId(null);
+      setActiveTemplate(design);
+      form.setFieldsValue({
+        ...design,
+        placeholders: design.placeholders.join(', '),
+      });
+      message.success('AI Blueprint generated! Review and save it below.');
+    } catch {
+      message.error('Failed to generate AI design.');
+    } finally {
+      setDesigning(false);
+    }
+  };
 
   // ── Loaders ───────────────────────────────────────────────────────────────
 
@@ -77,8 +101,6 @@ const TemplateStudio: React.FC = () => {
       loadSpecificTemplate(selectedId);
     }
   }, [selectedId]);
-
-  // ── Handlers ──────────────────────────────────────────────────────────────
 
   const handleCreateNew = () => {
     const newId = `T-NEW-${Math.floor(Math.random() * 1000)}`;
@@ -145,6 +167,29 @@ const TemplateStudio: React.FC = () => {
       <Row gutter={24}>
         {/* Left: Library */}
         <Col xs={24} md={6}>
+          <Card 
+            title={<span><BuildOutlined /> Magic Design</span>} 
+            size="small"
+            style={{ marginBottom: 16, border: '1px solid #bae7ff', background: '#f0faff' }}
+          >
+            <Input.TextArea 
+              rows={3} 
+              placeholder="Describe your design (e.g., 'Modern technical comparison with dark blue theme')"
+              value={aiDescription}
+              onChange={e => setAiDescription(e.target.value)}
+              style={{ marginBottom: 8 }}
+            />
+            <Button 
+              type="primary" 
+              block 
+              icon={<BgColorsOutlined />} 
+              onClick={handleMagicDesign}
+              loading={designing}
+            >
+              Generate Design
+            </Button>
+          </Card>
+
           <Card 
             title="Registry" 
             size="small"
