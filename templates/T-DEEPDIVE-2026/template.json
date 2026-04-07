@@ -1,0 +1,72 @@
+{
+  "id": "T-DEEPDIVE-2026",
+  "name": "Professional Technical Deep-Dive",
+  "platforms": [
+    "linkedin"
+  ],
+  "aspect_ratio": "4:5",
+  "niche": [
+    "ai_engineering"
+  ],
+  "description": "A high-trust technical carousel for deep-dives into AI trends and engineering workflows. Perfect for multi-slide technical explanations.",
+  "placeholders": [
+    "HOOK_TITLE",
+    "HOOK_SUB",
+    "BODY_1_TITLE",
+    "BODY_1_TEXT",
+    "BODY_2_TITLE",
+    "BODY_2_TEXT",
+    "BODY_3_TITLE",
+    "BODY_3_TEXT",
+    "CTA_TITLE",
+    "CTA_TEXT"
+  ],
+  "slides": [
+    {
+      "index": 0,
+      "type": "content"
+    },
+    {
+      "index": 1,
+      "type": "content"
+    },
+    {
+      "index": 2,
+      "type": "content"
+    },
+    {
+      "index": 3,
+      "type": "content"
+    },
+    {
+      "index": 4,
+      "type": "content"
+    },
+    {
+      "index": 5,
+      "type": "content"
+    },
+    {
+      "index": 6,
+      "type": "content"
+    },
+    {
+      "index": 7,
+      "type": "content"
+    },
+    {
+      "index": 8,
+      "type": "content"
+    },
+    {
+      "index": 9,
+      "type": "content"
+    }
+  ],
+  "colors": {
+    "primary": "#1e293b",
+    "secondary": "#f8fafc",
+    "text": "#ffffff"
+  },
+  "status": "active"
+}

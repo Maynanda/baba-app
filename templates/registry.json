@@ -189,6 +189,18 @@
         "minimalism"
       ],
       "status": "draft"
+    },
+    {
+      "id": "T-DEEPDIVE-2026",
+      "name": "Professional Technical Deep-Dive",
+      "platforms": [
+        "linkedin"
+      ],
+      "aspect_ratio": "4:5",
+      "niche": [
+        "ai_engineering"
+      ],
+      "status": "active"
     }
   ]
 }

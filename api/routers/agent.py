@@ -25,7 +25,7 @@ class DesignRequest(BaseModel):
     description: str
 
 @router.post("/draft")
-async def create_ai_draft(body: DraftRequest):
+def create_ai_draft(body: DraftRequest):
     """
     Trigger AI drafting for one or more raw content items, or via user description.
     """
@@ -56,7 +56,7 @@ async def create_ai_draft(body: DraftRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/design")
-async def create_ai_template_design(body: DesignRequest):
+def create_ai_template_design(body: DesignRequest):
     """
     Trigger AI design for a new template schema.
     """

@@ -16,7 +16,7 @@ const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 60000, // Synthesis can take time
+  timeout: 180000, // Synthesis can take time (e.g. Pro Mode or complex search)
 });
 
 export default apiClient;

@@ -45,6 +45,7 @@ client = genai.Client(api_key=_RAW_KEY)
 
 # Define the model — centrally managed in config/settings.py
 MODEL_NAME = _CLEAN_MODEL
+MODEL_FALLBACKS = [MODEL_NAME, "gemini-flash-latest", "gemini-2.0-flash", "gemini-2.5-flash"]
 
 def list_available_models():
     """Diagnostic tool to see what models your API key can access."""
@@ -177,12 +178,26 @@ def generate_draft(raw_ids: list[str], template_id: str = "carousel_dark_1x1", p
         prompt += f"\n\nUSER'S SPECIAL INSTRUCTION: \"{user_description}\""
 
     if pro_mode:
-        prompt += "\n\nAUTONOMOUS ORCHESTRATION MODE:\n" \
+        # 2a. Pre-load Context to SAVE TURNS and QUOTA
+        # By giving the AI the lists immediately, we save 1-2 network roundtrips (Turn 1/2)
+        try:
+            from agent.tools import list_all_templates, list_recent_trends
+            template_list = list_all_templates()
+            recent_trends = list_recent_trends()
+        except Exception:
+            template_list = "Static: carousel_dark_1x1, carousel_light_1x1"
+            recent_trends = "No recent trends found."
+
+        prompt += f"\n\nAUTONOMOUS ORCHESTRATION MODE:\n" \
+                  f"SYSTEM CONTEXT (Pre-loaded to save quota):\n" \
+                  f"--- AVAILABLE TEMPLATES ---\n{template_list}\n" \
+                  f"--- RECENT RESEARCH ---\n{recent_trends}\n\n" \
+                  "INSTRUCTIONS:\n" \
                   "1. Read the user instruction carefully.\n" \
-                  "2. If context is missing, use 'search_research' and 'get_research_content' to find relevant articles.\n" \
-                  "3. If the user wants a specific layout, use Template Tools to find or create one.\n" \
-                  "4. If no existing template is perfect, use 'register_custom_template' to DESIGN a pixel-perfect layout (colors, aspect ratio, and custom placeholders) for this specific data story.\n" \
-                  "5. Return the finalized content matching your chosen or newly created template."
+                  "2. If context is missing, use 'search_research' and 'get_research_content' to find article bodies (REQUIRED if you don't have enough facts).\n" \
+                  "3. Use the TEMPLATES list above to select a design. CALL tools ONLY if you need deep details (get_template_schema).\n" \
+                  "4. If no existing template is perfect, use 'register_custom_template' to DESIGN a pixel-perfect layout.\n" \
+                  "5. CRITICAL: Once you have facts and a template, RETURN THE DRAFT JSON IMMEDIATELY. Do not talk unnecessarily.\n"
 
     import time
     import random
@@ -191,31 +206,42 @@ def generate_draft(raw_ids: list[str], template_id: str = "carousel_dark_1x1", p
     # 3. Agentic Execution Loop (Manual Orchestration)
     if not pro_mode:
         # LEGACY/SIMPLE PATH: Standard Magic Draft
-        max_retries = 3
-        retry_delay = 2
-        for attempt in range(max_retries):
-            try:
-                logger.info(f"[agent] Standard synthesis with {MODEL_NAME} (attempt {attempt+1})...")
-                response = client.models.generate_content(
-                    model=MODEL_NAME,
-                    contents=[prompt],
-                    config=types.GenerateContentConfig(
-                        temperature=0.7,
-                        response_mime_type="text/plain",
+        final_post_raw = None
+        for model_to_try in MODEL_FALLBACKS:
+            max_retries = 3
+            retry_delay = 2
+            for attempt in range(max_retries):
+                try:
+                    logger.info(f"[agent] Standard synthesis with {model_to_try} (attempt {attempt+1})...")
+                    response = client.models.generate_content(
+                        model=model_to_try,
+                        contents=[prompt],
+                        config=types.GenerateContentConfig(
+                            temperature=0.7,
+                            response_mime_type="text/plain",
+                        )
                     )
-                )
+                    final_post_raw = response
+                    break
+                except Exception as e:
+                    err_str = str(e).upper()
+                    if ("503" in err_str or "UNAVAILABLE" in err_str or "HIGH DEMAND" in err_str) and attempt < max_retries - 1:
+                        wait_time = retry_delay * (2 ** attempt) + (random.uniform(0, 1))
+                        logger.warning(f"[agent] Gemini Busy (503). Retrying in {wait_time:.1f}s... (Attempt {attempt+1}/{max_retries})")
+                        time.sleep(wait_time)
+                        continue
+                    elif "429" in err_str or "RESOURCE_EXHAUSTED" in err_str:
+                        logger.warning(f"[agent] Quota Exceeded (429) for {model_to_try}. Falling back...")
+                        break # Try next model
+                    else:
+                        logger.error(f"[agent] Standard Gemini synthesis failed: {e}")
+                        return None
+            if final_post_raw:
+                response = final_post_raw
                 break
-            except Exception as e:
-                err_str = str(e).upper()
-                if ("503" in err_str or "UNAVAILABLE" in err_str or "HIGH DEMAND" in err_str) and attempt < max_retries - 1:
-                    wait_time = retry_delay * (2 ** attempt) + (random.uniform(0, 1))
-                    logger.warning(f"[agent] Gemini Busy (503). Retrying in {wait_time:.1f}s... (Attempt {attempt+1}/{max_retries})")
-                    time.sleep(wait_time)
-                    continue
-                else:
-                    logger.error(f"[agent] Standard Gemini synthesis failed: {e}")
-                    logger.error(traceback.format_exc())
-                    return None
+        else:
+            logger.error("[agent] All model fallbacks exhausted.")
+            return None
     if pro_mode:
         from agent.tools import AVAILABLE_TOOLS
         
@@ -263,114 +289,107 @@ def generate_draft(raw_ids: list[str], template_id: str = "carousel_dark_1x1", p
         messages = [types.Content(role="user", parts=[types.Part(text=prompt)])]
         final_response = None
         
-        for turn in range(5):
-            max_retries = 3
-            retry_delay = 2
+        # We cycle through models for the WHOLE multi-turn loop if needed
+        for model_to_try in MODEL_FALLBACKS:
+            completed_loop = True
+            current_messages = list(messages)
             
-            response = None
-            for attempt in range(max_retries):
-                try:
-                    logger.info(f"[agent] Pro Mode turn {turn+1} (attempt {attempt+1})...")
-                    response = client.models.generate_content(
-                        model=MODEL_NAME,
-                        contents=messages,
-                        config=types.GenerateContentConfig(
-                            temperature=0.7,
-                            tools=tool_declarations,
-                            response_mime_type="text/plain",
+            for turn in range(4): # Reduced turns to save quota
+                max_retries = 3
+                retry_delay = 3
+                
+                response = None
+                for attempt in range(max_retries):
+                    try:
+                        logger.info(f"[agent] Pro Mode turn {turn+1} ({model_to_try}) (attempt {attempt+1})...")
+                        response = client.models.generate_content(
+                            model=model_to_try,
+                            contents=current_messages,
+                            config=types.GenerateContentConfig(
+                                temperature=0.7,
+                                tools=tool_declarations,
+                                response_mime_type="text/plain",
+                            )
                         )
-                    )
-                    break
-                except Exception as e:
-                    err_str = str(e).upper()
-                    if ("503" in err_str or "UNAVAILABLE" in err_str or "HIGH DEMAND" in err_str) and attempt < max_retries - 1:
-                        wait_time = retry_delay * (2 ** attempt) + (random.uniform(0, 1))
-                        logger.warning(f"[agent] Gemini Busy (503). Retrying in {wait_time:.1f}s... (Attempt {attempt+1}/{max_retries})")
-                        time.sleep(wait_time)
+                        break
+                    except Exception as e:
+                        err_str = str(e).upper()
+                        if ("503" in err_str or "UNAVAILABLE" in err_str or "HIGH DEMAND" in err_str) and attempt < max_retries - 1:
+                            wait_time = retry_delay * (2 ** attempt) + (random.uniform(0, 1))
+                            logger.warning(f"[agent] Gemini Busy (503). Retrying in {wait_time:.1f}s...")
+                            time.sleep(wait_time)
+                            continue
+                        elif "429" in err_str or "RESOURCE_EXHAUSTED" in err_str:
+                             logger.warning(f"[agent] Quota Hit (429) for {model_to_try} at Turn {turn+1}.")
+                             completed_loop = False
+                             break # Break attempt loop
+                        else:
+                            logger.error(f"[agent] Pro Mode Gemini failed at turn {turn+1}: {e}")
+                            return None
+                
+                if not completed_loop:
+                    break # Break turn loop, try next model
+                    
+                if not response or not response.candidates:
+                    logger.error("[agent] No candidates in Gemini response.")
+                    return None
+                    
+                candidate = response.candidates[0]
+                current_messages.append(candidate.content)
+                
+                # Check for Tool Calls
+                tool_calls = [p.function_call for p in candidate.content.parts if p.function_call]
+                
+                if not tool_calls:
+                    # Check if we have VALID JSON in the response
+                    text_content = candidate.content.parts[0].text if candidate.content.parts else ""
+                    import re # Ensure re is imported
+                    json_match = re.search(r'\{.*\}', text_content, re.DOTALL)
+                    
+                    if json_match:
+                        try:
+                            json.loads(json_match.group())
+                            logger.info(f"[agent] Found valid JSON in Turn {turn+1}. Synthesis complete.")
+                            final_response = response
+                            break
+                        except json.JSONDecodeError:
+                            pass 
+                    
+                    if turn < 3:
+                        logger.info(f"[agent] Turn {turn+1} conversational. Nudging for JSON...")
+                        current_messages.append(types.Content(role="user", parts=[
+                            types.Part.from_text("Excellent analysis. Now PROVIDE the final carousel draft in strict JSON format (content_name, template_id, caption, slides_data).")
+                        ]))
                         continue
                     else:
-                        logger.error(f"[agent] Pro Mode Gemini failed at turn {turn+1}: {e}")
-                        if "API key not valid" in str(e):
-                            logger.error("[agent] CRITICAL: The GEMINI_API_KEY in your .env file is rejected by Google. "
-                                         "Please verify it at https://aistudio.google.com/app/apikey. "
-                                         "NOTE: If you are making this as an MCP server, ensuring environment variables are passed correctly is vital.")
-                        return None
-    
-            if not response or not response.candidates:
-                logger.error("[agent] No candidates in Gemini response.")
-                return None
-                
-            candidate = response.candidates[0]
-            messages.append(candidate.content)
-            
-            # 1. Check for Tool Calls
-            tool_calls = [p.function_call for p in candidate.content.parts if p.function_call]
-            
-            if not tool_calls:
-                # 2. No tools? Check if we have VALID JSON in the response
-                text_content = candidate.content.parts[0].text if candidate.content.parts else ""
-                json_match = re.search(r'\{.*\}', text_content, re.DOTALL)
-                
-                if json_match:
-                    try:
-                        json.loads(json_match.group())
-                        logger.info(f"[agent] Found valid JSON in Turn {turn+1}. Synthesis complete.")
                         final_response = response
                         break
-                    except json.JSONDecodeError:
-                        pass # Fall through to nudge
+                    
+                # Execute Tool Calls
+                logger.info(f"[agent] AI requested {len(tool_calls)} tool calls.")
+                response_parts = []
+                for fc in tool_calls:
+                    tool_name = fc.name
+                    args = fc.args or {}
+                    if tool_name in AVAILABLE_TOOLS:
+                        logger.info(f"[agent] Executing: {tool_name}({args})")
+                        try:
+                            result = AVAILABLE_TOOLS[tool_name](**args)
+                            response_parts.append(types.Part(function_response=types.FunctionResponse(name=tool_name, response={"result": result})))
+                        except Exception as tool_err:
+                            response_parts.append(types.Part(function_response=types.FunctionResponse(name=tool_name, response={"error": str(tool_err)})))
+                    else:
+                        response_parts.append(types.Part(function_response=types.FunctionResponse(name=tool_name, response={"error": "Tool not found."})))
                 
-                # 3. No tools AND No JSON? Nudge the AI if we still have turns left
-                if turn < 4:
-                    logger.info(f"[agent] Turn {turn+1} was conversational. Nudging AI for JSON final draft...")
-                    messages.append(types.Content(role="user", parts=[
-                        types.Part.from_text("This analysis is good. Now please PROVIDE the absolute FINAL carousel content draft in the strict JSON format specified (content_name, template_id, caption, slides_data).")
-                    ]))
-                    continue
-                else:
-                    final_response = response # Let the final turn return what it has
-                    break
-                
-            # Execute Tool Calls
-            logger.info(f"[agent] AI requested {len(tool_calls)} tool calls.")
-            response_parts = []
+                current_messages.append(types.Content(role="tool", parts=response_parts))
             
-            for fc in tool_calls:
-                tool_name = fc.name
-                args = fc.args or {}
-                
-                if tool_name in AVAILABLE_TOOLS:
-                    logger.info(f"[agent] Executing: {tool_name}({args})")
-                    try:
-                        result = AVAILABLE_TOOLS[tool_name](**args)
-                        response_parts.append(types.Part(
-                            function_response=types.FunctionResponse(
-                                name=tool_name,
-                                response={"result": result}
-                            )
-                        ))
-                    except Exception as tool_err:
-                        logger.error(f"[agent] Tool err: {tool_err}")
-                        response_parts.append(types.Part(
-                            function_response=types.FunctionResponse(
-                                name=tool_name,
-                                response={"error": str(tool_err)}
-                            )
-                        ))
-                else:
-                    logger.warning(f"[agent] Unknown tool: {tool_name}")
-                    response_parts.append(types.Part(
-                        function_response=types.FunctionResponse(
-                            name=tool_name,
-                            response={"error": "Tool not found."}
-                        )
-                    ))
+            if completed_loop and final_response:
+                break # Success!
             
-            messages.append(types.Content(role="tool", parts=response_parts))
-        
-        if not final_response:
-            logger.error("[agent] Max turns reached without final response.")
+        else:
+            logger.error("[agent] All model fallbacks for Pro Mode exhausted.")
             return None
+
         response = final_response
         
 
