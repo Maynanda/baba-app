@@ -63,13 +63,21 @@ def get_template_schema(template_id: str) -> str:
 
 def list_all_templates() -> str:
     """
-    Lists every template currently in the registry with their IDs and descriptions.
+    Lists every template currently in the registry with their IDs, descriptions, and required placeholders.
     """
     try:
-        from api.routers.generator import list_templates
+        from api.routers.generator import list_templates, get_template
         res = list_templates()
         templates = res.get("data", [])
-        lines = [f"- {t['id']}: {t['name']} ({t['aspect_ratio']}) [{', '.join(t['platforms'])}]" for t in templates]
+        
+        lines = []
+        for t in templates:
+            # Fetch full details to get placeholders
+            detail = get_template(t['id'])
+            p_list = detail.get("data", {}).get("placeholders", [])
+            p_str = ", ".join(p_list)
+            lines.append(f"- {t['id']}: {t['name']} ({t['aspect_ratio']}). Placeholders: [{p_str}]")
+            
         return "SYSTEM REGISTRY:\n" + "\n".join(lines)
     except Exception as e:
         return f"ERROR: Could not list registry: {e}"
