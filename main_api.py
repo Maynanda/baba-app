@@ -30,7 +30,7 @@ async def lifespan(app: FastAPI):
     stop_scheduler()
 
 # ── Router imports ─────────────────────────────────────────────────────────────
-from api.routers import data, scraper, generator, agent, publisher, sources
+from api.routers import data, scraper, generator, agent, publisher, sources, chat
 
 app = FastAPI(
     title="Baba-App API",
@@ -56,6 +56,7 @@ app.include_router(generator.router, prefix="/api/generator", tags=["Generator"]
 app.include_router(agent.router,     prefix="/api/agent",     tags=["Agent"])
 app.include_router(publisher.router, prefix="/api/publisher", tags=["Publisher"])
 app.include_router(sources.router,   prefix="/api/sources",   tags=["Sources"])
+app.include_router(chat.router,      prefix="/api/chat",      tags=["Chat"])
 
 @app.get("/", tags=["Health"])
 def health_check():

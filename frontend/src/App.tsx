@@ -33,6 +33,7 @@ import PublisherAssistant from './pages/PublisherAssistant';
 import TemplateStudio from './pages/TemplateStudio';
 import Walkthrough     from './pages/Walkthrough';
 import SourceManagement from './pages/SourceManagement';
+import AgentChat        from './pages/AgentChat';
 
 const { Header, Content } = Layout;
 
@@ -78,6 +79,11 @@ const navItems = [
     key: 'guide',
     icon: <BookOutlined />,
     label: <Link to="/guide">Guide</Link>,
+  },
+  {
+    key: 'chat',
+    icon: <RobotOutlined />,
+    label: <Link to="/chat">AI Chat</Link>,
   },
 ];
 
@@ -165,6 +171,7 @@ const AppLayout: React.FC = () => {
             <Route path="/studio"    element={<ContentStudio />} />
             <Route path="/publisher" element={<PublisherAssistant />} />
             <Route path="/guide"     element={<Walkthrough />} />
+            <Route path="/chat"      element={<AgentChat />} />
           </Routes>
         </div>
       </Content>
